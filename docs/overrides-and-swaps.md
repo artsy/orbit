@@ -62,7 +62,10 @@ the app resolves them to the full periods and builds the two overrides.
 
 ## Remove an override
 
-Deleting an override restores the base assignment for that range:
+**In the UI:** the **Overrides & swaps** section on `/rotations/<rotationId>`
+lists active overrides — click **Remove** to delete one.
+
+**Via the API:** deleting an override restores the base assignment for that range:
 
 ```sh
 curl -X DELETE http://localhost:3000/api/overrides/<overrideId> \

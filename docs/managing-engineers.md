@@ -40,7 +40,9 @@ curl -X POST http://localhost:3000/api/engineers \
 ## Remove (deactivate) an engineer
 
 Engineers are **soft-deactivated** (`active: false`) rather than deleted, so
-historical overrides that reference them stay intact.
+historical overrides that reference them stay intact. A deactivated engineer is
+automatically **skipped in every rotation's round-robin** (no need to edit
+membership), and is restored to the rotation if reactivated.
 
 **In the UI:** on **`/engineers`**, click **Deactivate** next to the person.
 
@@ -80,9 +82,13 @@ curl -X POST http://localhost:3000/api/rotations \
 
 ## Add or remove an engineer in a rotation's on-call order
 
-Membership is set as a **complete ordered list**: position in the array is the
-position in the round-robin. To add someone, send the full list including them;
-to remove someone, send the full list without them.
+**In the UI:** open the rotation at **`/rotations/<rotationId>`** and use the
+**On-call order** section to add an engineer, reorder with the ↑/↓ buttons, or
+remove one. Changes save immediately and the schedule updates.
+
+**Via the API:** membership is set as a **complete ordered list** — position in
+the array is the position in the round-robin. To add someone, send the full list
+including them; to remove someone, send the full list without them.
 
 Get the current members first:
 
@@ -102,7 +108,3 @@ curl -X PUT http://localhost:3000/api/rotations/<rotationId>/members \
 
 The order of `engineerIds` **is** the on-call order. Reordering the array
 reorders the rotation.
-
-> Note: editing rotation membership is API-only today and is a good candidate
-> for a future admin UI. If you add that UI, update this page (see the doc-sync
-> rule in `AGENTS.md`).

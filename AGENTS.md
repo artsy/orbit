@@ -48,3 +48,13 @@ The docs site redeploys automatically on every push to `main` that touches
 `docs/` (via `.github/workflows/pages.yml`), so keeping the Markdown current is
 all that's needed to keep the website current. A PR that changes behaviour
 without a matching docs update should be considered incomplete.
+
+## Keep the e2e tests in sync (required)
+
+**Whenever a user-facing flow is added or changed, update the Playwright e2e
+tests (`e2e/`) to match, when it makes sense.** If you add a new page or a new
+interaction (a form, a button that mutates data, a navigation), add or extend a
+spec that drives it against mocked `/api` responses. If you change an existing
+flow, update its spec. Skip only when there's genuinely nothing user-facing to
+exercise (pure refactors, backend-only tweaks with no UI change) — and say so.
+Tests run as an injected-session user; we do not e2e-test the auth flow itself.
