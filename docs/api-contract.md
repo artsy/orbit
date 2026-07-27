@@ -1,11 +1,8 @@
 ---
-layout: default
 title: API contract
 ---
 
 # Orbit API contract
-
-[← Back to home](index.html)
 
 All routes live under `/api` (Next.js Pages Router API routes, file suffix
 `.page.ts`). All requests require a valid next-auth session. **Write** actions

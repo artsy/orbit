@@ -1,11 +1,8 @@
 ---
-layout: default
 title: Who's on call
 ---
 
 # Who's on call
-
-[← Back to home](index.html)
 
 To see who is on call — the computed rotation with overrides and swaps already
 applied — call the schedule endpoint for a rotation and a date window:

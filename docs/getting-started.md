@@ -1,11 +1,8 @@
 ---
-layout: default
 title: Getting started
 ---
 
 # Getting started
-
-[← Back to home](index.html)
 
 ## Prerequisites
 
@@ -82,4 +79,4 @@ title: Getting started
 | `yarn db:up` / `yarn db:down` | Start / stop local Postgres. |
 | `yarn prisma:migrate` | Apply migrations (dev). |
 
-Having trouble? See [Troubleshooting](troubleshooting.html).
+Having trouble? See [Troubleshooting](./troubleshooting.md).

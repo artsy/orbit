@@ -1,16 +1,13 @@
 ---
-layout: default
 title: Troubleshooting
 ---
 
 # Troubleshooting
 
-[← Back to home](index.html)
-
 ### `Only absolute URLs are supported` on login
 
 Your env isn't fully configured. Make sure `NEXTAUTH_URL` and `GRAVITY_URL` are
-set (see [Getting started](getting-started.html)) — this usually means you're
+set (see [Getting started](./getting-started.md)) — this usually means you're
 missing a `.env.local`.
 
 ### `Unauthorized: invalid client_id` on login
