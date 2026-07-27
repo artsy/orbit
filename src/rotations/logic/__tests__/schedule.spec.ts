@@ -473,3 +473,43 @@ describe("cadence and start-hour handling", () => {
     expect(bounds.periodEnd.toISOString()).toBe("2026-01-12T10:00:00.000Z")
   })
 })
+
+// ---------------------------------------------------------------------------
+// inactive engineers
+// ---------------------------------------------------------------------------
+
+describe("inactive engineers", () => {
+  const withEngineer = (
+    engineerId: string,
+    position: number,
+    active: boolean
+  ) =>
+    makeMember(engineerId, position, {
+      engineer: {
+        id: engineerId,
+        name: engineerId,
+        email: `${engineerId}@example.com`,
+        slackUsername: null,
+        active,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    })
+
+  it("skips deactivated engineers in the round-robin", () => {
+    const members = [
+      withEngineer("eng-a", 0, true),
+      withEngineer("eng-b", 1, false), // deactivated
+      withEngineer("eng-c", 2, true),
+    ]
+    const rotation = makeRotation()
+
+    // With eng-b removed, the rotation cycles eng-a, eng-c, eng-a, ...
+    expect(computeBaseAssignment(rotation, members, ANCHOR_DATE)).toBe("eng-a")
+    expect(
+      computeBaseAssignment(rotation, members, addDays(ANCHOR_DATE, 7))
+    ).toBe("eng-c")
+    expect(
+      computeBaseAssignment(rotation, members, addDays(ANCHOR_DATE, 14))
+    ).toBe("eng-a")
+  })
+})

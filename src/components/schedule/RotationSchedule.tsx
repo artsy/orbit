@@ -1,4 +1,4 @@
-import { Box, Flex, Spinner, Text } from "@artsy/palette"
+import { Box, Flex, Separator, Spacer, Spinner, Text } from "@artsy/palette"
 import { addDays, formatISO } from "date-fns"
 import { FC, useMemo } from "react"
 import { Engineer } from "rotations/types"
@@ -9,9 +9,9 @@ import {
   useRotation,
   useSchedule,
 } from "utils/hooks/useApi"
-// Authored by WP5 in parallel — may not exist yet in this working copy, but
-// will at integration time. Imported per the WP4/WP5 contract.
 import { CreateOverrideButton, CreateSwapButton } from "components/overrides"
+import { OverridesList } from "components/overrides/OverridesList"
+import { MembersEditor } from "components/members/MembersEditor"
 import { ScheduleTable } from "./ScheduleTable"
 
 interface RotationScheduleProps {
@@ -27,7 +27,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     error: rotationError,
     isLoading: rotationLoading,
   } = useRotation(rotationId)
-  const { error: membersError } = useMembers(rotationId)
+  const { error: membersError, mutate: mutateMembers } = useMembers(rotationId)
   const { data: engineers, error: engineersError } = useEngineers()
 
   const cadenceDays = rotation?.cadenceDays ?? DEFAULT_CADENCE_DAYS
@@ -97,6 +97,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const handleDone = () => {
     mutateSchedule()
     mutateOverrides()
+    mutateMembers()
   }
 
   return (
@@ -114,6 +115,22 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
       </Flex>
 
       <ScheduleTable entries={entries} engineersById={engineersById} />
+
+      <Spacer y={4} />
+      <Separator />
+      <Spacer y={4} />
+
+      <OverridesList
+        rotationId={rotationId}
+        engineersById={engineersById}
+        onChange={handleDone}
+      />
+
+      <Spacer y={4} />
+      <Separator />
+      <Spacer y={4} />
+
+      <MembersEditor rotationId={rotationId} onChange={handleDone} />
     </Box>
   )
 }

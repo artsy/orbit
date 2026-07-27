@@ -39,6 +39,9 @@ function periodMs(rotation: Rotation): number {
 
 function sortedEngineerIds(members: RotationMember[]): string[] {
   return [...members]
+    // Skip deactivated engineers so they drop out of the round-robin. When the
+    // engineer isn't populated on the member we can't tell, so we keep it.
+    .filter((member) => member.engineer?.active !== false)
     .sort((a, b) => a.position - b.position)
     .map((member) => member.engineerId)
 }
