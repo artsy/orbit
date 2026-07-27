@@ -6,6 +6,7 @@
  * is safe to unit test with plain fixtures and to import from both API
  * routes and frontend code.
  */
+import { TZDate } from "@date-fns/tz"
 import { addDays, differenceInCalendarDays, parseISO } from "date-fns"
 
 import {
@@ -29,12 +30,16 @@ function effectiveCadenceDays(rotation: Rotation): number {
 }
 
 /**
- * Length of one on-call period in milliseconds. Using the full timestamp
- * (not calendar days) means the rotation hands off at the anchorDate's
- * time of day — e.g. an anchor at 10:00 rotates weekly at 10:00.
+ * The instant at which period `n` begins. Computed in the rotation's timezone
+ * so the handoff stays at the same wall-clock hour across DST changes — e.g.
+ * "weekly at 10:00 America/New_York" is always 10:00 local, even though the
+ * underlying UTC offset shifts by an hour twice a year.
  */
-function periodMs(rotation: Rotation): number {
-  return effectiveCadenceDays(rotation) * DAY_MS
+function periodStartInstant(rotation: Rotation, n: number): Date {
+  const anchor = parseISO(rotation.anchorDate)
+  const anchorInZone = new TZDate(anchor.getTime(), rotation.timezone)
+  const start = addDays(anchorInZone, n * effectiveCadenceDays(rotation))
+  return new Date(start.getTime())
 }
 
 function sortedEngineerIds(members: RotationMember[]): string[] {
@@ -60,7 +65,13 @@ function isWithinInclusive(date: Date, start: Date, end: Date): boolean {
  */
 function periodIndexForDate(rotation: Rotation, date: Date): number {
   const anchor = parseISO(rotation.anchorDate)
-  return Math.floor((date.getTime() - anchor.getTime()) / periodMs(rotation))
+  // Estimate with fixed-length periods, then correct for any DST drift so that
+  // periodStartInstant(n) <= date < periodStartInstant(n + 1).
+  const approxMs = effectiveCadenceDays(rotation) * DAY_MS
+  let n = Math.floor((date.getTime() - anchor.getTime()) / approxMs)
+  while (periodStartInstant(rotation, n).getTime() > date.getTime()) n--
+  while (periodStartInstant(rotation, n + 1).getTime() <= date.getTime()) n++
+  return n
 }
 
 /**
@@ -90,11 +101,9 @@ export function getPeriodBounds(
   rotation: Rotation,
   date: Date
 ): { periodIndex: number; periodStart: Date; periodEnd: Date } {
-  const anchor = parseISO(rotation.anchorDate)
-  const ms = periodMs(rotation)
   const periodIndex = periodIndexForDate(rotation, date)
-  const periodStart = new Date(anchor.getTime() + periodIndex * ms)
-  const periodEnd = new Date(periodStart.getTime() + ms)
+  const periodStart = periodStartInstant(rotation, periodIndex)
+  const periodEnd = periodStartInstant(rotation, periodIndex + 1)
   return { periodIndex, periodStart, periodEnd }
 }
 
@@ -139,9 +148,6 @@ export function getScheduleForRange(
   rangeStart: Date,
   rangeEnd: Date
 ): ScheduleEntry[] {
-  const anchor = parseISO(rotation.anchorDate)
-  const ms = periodMs(rotation)
-
   const firstPeriodIndex = periodIndexForDate(rotation, rangeStart)
   const lastPeriodIndex = periodIndexForDate(rotation, rangeEnd)
 
@@ -152,8 +158,8 @@ export function getScheduleForRange(
     periodIndex <= lastPeriodIndex;
     periodIndex++
   ) {
-    const periodStart = new Date(anchor.getTime() + periodIndex * ms)
-    const periodEnd = new Date(periodStart.getTime() + ms)
+    const periodStart = periodStartInstant(rotation, periodIndex)
+    const periodEnd = periodStartInstant(rotation, periodIndex + 1)
 
     const baseEngineerId = computeBaseAssignment(rotation, members, periodStart)
     const { effectiveEngineerId, override } = applyOverrides(

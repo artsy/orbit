@@ -1,4 +1,5 @@
 import { Box, Button, Flex, Input, Select, Spacer, Text, useToasts } from "@artsy/palette"
+import { TZDate } from "@date-fns/tz"
 import { Form, Formik } from "formik"
 import { useRouter } from "next/router"
 import * as Yup from "yup"
@@ -9,6 +10,7 @@ interface NewRotationValues {
   cadence: string // "7" (weekly) or "14" (biweekly)
   startDate: string // YYYY-MM-DD
   startHour: string // "0".."23"
+  timezone: string // IANA zone, e.g. "America/New_York"
 }
 
 const cadenceOptions = [
@@ -22,11 +24,26 @@ const hourOptions = Array.from({ length: 24 }, (_, hour) => ({
   text: `${String(hour).padStart(2, "0")}:00`,
 }))
 
+// Static list (avoids server/client hydration drift from timezone detection).
+const timezoneOptions = [
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "UTC",
+].map((tz) => ({ value: tz, text: tz }))
+
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("A name is required"),
   cadence: Yup.string().required(),
   startDate: Yup.string().required("A start date is required"),
   startHour: Yup.string().required("A start hour is required"),
+  timezone: Yup.string().required("A timezone is required"),
 })
 
 export default function NewRotationPage() {
@@ -45,22 +62,30 @@ export default function NewRotationPage() {
           cadence: "7",
           startDate: "",
           startHour: "10",
+          timezone: "America/New_York",
         }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
           try {
-            // Combine the chosen date + hour into an anchor instant. The
-            // date/hour are interpreted in the browser's local timezone.
-            const hh = String(Number(values.startHour)).padStart(2, "0")
-            const anchorDate = new Date(
-              `${values.startDate}T${hh}:00:00`
+            // Combine the chosen date + hour into an anchor instant, interpreted
+            // in the rotation's timezone (the weekly/biweekly handoff time).
+            const [year, month, day] = values.startDate.split("-").map(Number)
+            const anchorDate = TZDate.tz(
+              values.timezone,
+              year,
+              month - 1,
+              day,
+              Number(values.startHour),
+              0,
+              0,
+              0
             ).toISOString()
 
             const rotation = await createRotation({
               name: values.name,
               cadenceDays: Number(values.cadence),
               anchorDate,
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              timezone: values.timezone,
             })
 
             sendToast({ variant: "success", message: `${rotation.name} created` })
@@ -119,6 +144,14 @@ export default function NewRotationPage() {
               options={hourOptions}
               selected={values.startHour}
               onSelect={(value) => setFieldValue("startHour", value)}
+            />
+
+            <Select
+              name="timezone"
+              title="Timezone"
+              options={timezoneOptions}
+              selected={values.timezone}
+              onSelect={(value) => setFieldValue("timezone", value)}
             />
 
             <Flex justifyContent="flex-end" mt={1}>

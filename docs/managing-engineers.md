@@ -59,9 +59,10 @@ curl -X DELETE http://localhost:3000/api/engineers/<engineerId> \
 
 - **Name**.
 - **Cadence** — Weekly or Biweekly.
-- **Start date** and **start hour** — together these set the rotation's anchor.
-  The start hour is the weekly (or biweekly) **handoff time**: the rotation rolls
-  to the next engineer at that hour.
+- **Start date**, **start hour**, and **timezone** — together these set the
+  rotation's anchor. The start hour is the weekly (or biweekly) **handoff time**
+  in the chosen timezone: the rotation rolls to the next engineer at that local
+  hour, and it stays at that local hour across daylight-saving changes.
 
 **Via the API:**
 

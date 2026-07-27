@@ -1,12 +1,18 @@
 import { Box, Flex, Pill, Text } from "@artsy/palette"
-import { format, parseISO, subDays } from "date-fns"
+import { TZDate } from "@date-fns/tz"
+import { format, parseISO } from "date-fns"
 import { FC } from "react"
 import { Engineer, ScheduleEntry } from "rotations/types"
 
 interface ScheduleTableProps {
   entries: ScheduleEntry[]
   engineersById: Record<string, Engineer>
+  /** Times are displayed in this IANA timezone (the rotation's). */
+  timezone: string
 }
+
+const inZone = (iso: string, timezone: string) =>
+  new TZDate(parseISO(iso).getTime(), timezone)
 
 const isCurrentPeriod = (entry: ScheduleEntry, today: Date): boolean => {
   const start = parseISO(entry.periodStart)
@@ -25,6 +31,7 @@ const engineerName = (
 export const ScheduleTable: FC<ScheduleTableProps> = ({
   entries,
   engineersById,
+  timezone,
 }) => {
   const today = new Date()
 
@@ -38,6 +45,10 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
 
   return (
     <Box>
+      <Text variant="xs" color="mono60" mb={0.5}>
+        Times shown in {timezone}
+      </Text>
+
       <Flex
         py={0.5}
         borderBottom="1px solid"
@@ -79,8 +90,14 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
           >
             <Box width="25%">
               <Text variant="sm">
-                {format(parseISO(entry.periodStart), "MMM d")} –{" "}
-                {format(subDays(parseISO(entry.periodEnd), 1), "MMM d")}
+                {format(inZone(entry.periodStart, timezone), "MMM d, HH:mm")} –{" "}
+                {format(
+                  inZone(
+                    new Date(parseISO(entry.periodEnd).getTime() - 1).toISOString(),
+                    timezone
+                  ),
+                  "MMM d"
+                )}
               </Text>
             </Box>
 

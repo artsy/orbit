@@ -13,8 +13,10 @@ test.describe("create rotation", () => {
   test("creates a rotation from the UI and redirects to it", async ({
     page,
   }) => {
+    let postedBody: any = null
     await page.route("**/api/rotations", async (route) => {
       if (route.request().method() === "POST") {
+        postedBody = route.request().postDataJSON()
         return route.fulfill({ status: 201, json: newRotation })
       }
       return route.fulfill({ json: [] })
@@ -39,10 +41,13 @@ test.describe("create rotation", () => {
 
     await page.locator('input[name="name"]').fill("My rotation")
     await page.locator('input[name="startDate"]').fill("2026-07-20")
-    // cadence (weekly) and start hour default, so no need to touch the selects.
+    await page.locator('select[name="timezone"]').selectOption("Europe/London")
+    // cadence (weekly) and start hour keep their defaults.
 
     await page.getByRole("button", { name: "Create rotation" }).click()
 
     await expect(page).toHaveURL(/\/rotations\/rot-new/)
+    expect(postedBody?.cadenceDays).toBe(7)
+    expect(postedBody?.timezone).toBe("Europe/London")
   })
 })
