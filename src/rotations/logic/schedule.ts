@@ -21,9 +21,20 @@ function nonNegativeMod(n: number, m: number): number {
   return ((n % m) + m) % m
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
 /** cadenceDays < 1 is pathological input; clamp it to a single day. */
 function effectiveCadenceDays(rotation: Rotation): number {
   return rotation.cadenceDays < 1 ? 1 : rotation.cadenceDays
+}
+
+/**
+ * Length of one on-call period in milliseconds. Using the full timestamp
+ * (not calendar days) means the rotation hands off at the anchorDate's
+ * time of day — e.g. an anchor at 10:00 rotates weekly at 10:00.
+ */
+function periodMs(rotation: Rotation): number {
+  return effectiveCadenceDays(rotation) * DAY_MS
 }
 
 function sortedEngineerIds(members: RotationMember[]): string[] {
@@ -46,9 +57,7 @@ function isWithinInclusive(date: Date, start: Date, end: Date): boolean {
  */
 function periodIndexForDate(rotation: Rotation, date: Date): number {
   const anchor = parseISO(rotation.anchorDate)
-  const cadenceDays = effectiveCadenceDays(rotation)
-  const dayOffset = differenceInCalendarDays(date, anchor)
-  return Math.floor(dayOffset / cadenceDays)
+  return Math.floor((date.getTime() - anchor.getTime()) / periodMs(rotation))
 }
 
 /**
@@ -79,10 +88,10 @@ export function getPeriodBounds(
   date: Date
 ): { periodIndex: number; periodStart: Date; periodEnd: Date } {
   const anchor = parseISO(rotation.anchorDate)
-  const cadenceDays = effectiveCadenceDays(rotation)
+  const ms = periodMs(rotation)
   const periodIndex = periodIndexForDate(rotation, date)
-  const periodStart = addDays(anchor, periodIndex * cadenceDays)
-  const periodEnd = addDays(periodStart, cadenceDays)
+  const periodStart = new Date(anchor.getTime() + periodIndex * ms)
+  const periodEnd = new Date(periodStart.getTime() + ms)
   return { periodIndex, periodStart, periodEnd }
 }
 
@@ -128,7 +137,7 @@ export function getScheduleForRange(
   rangeEnd: Date
 ): ScheduleEntry[] {
   const anchor = parseISO(rotation.anchorDate)
-  const cadenceDays = effectiveCadenceDays(rotation)
+  const ms = periodMs(rotation)
 
   const firstPeriodIndex = periodIndexForDate(rotation, rangeStart)
   const lastPeriodIndex = periodIndexForDate(rotation, rangeEnd)
@@ -140,8 +149,8 @@ export function getScheduleForRange(
     periodIndex <= lastPeriodIndex;
     periodIndex++
   ) {
-    const periodStart = addDays(anchor, periodIndex * cadenceDays)
-    const periodEnd = addDays(periodStart, cadenceDays)
+    const periodStart = new Date(anchor.getTime() + periodIndex * ms)
+    const periodEnd = new Date(periodStart.getTime() + ms)
 
     const baseEngineerId = computeBaseAssignment(rotation, members, periodStart)
     const { effectiveEngineerId, override } = applyOverrides(

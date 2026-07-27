@@ -53,7 +53,15 @@ curl -X DELETE http://localhost:3000/api/engineers/<engineerId> \
 
 ## Create a rotation
 
-Creating a rotation is currently an API action (no dedicated UI page yet):
+**In the UI:** click **New rotation** on the home page (`/rotations/new`). Choose:
+
+- **Name**.
+- **Cadence** — Weekly or Biweekly.
+- **Start date** and **start hour** — together these set the rotation's anchor.
+  The start hour is the weekly (or biweekly) **handoff time**: the rotation rolls
+  to the next engineer at that hour.
+
+**Via the API:**
 
 ```sh
 curl -X POST http://localhost:3000/api/rotations \
@@ -62,13 +70,13 @@ curl -X POST http://localhost:3000/api/rotations \
   -d '{
     "name": "Platform on-call",
     "cadenceDays": 7,
-    "anchorDate": "2026-07-20T00:00:00.000Z"
+    "anchorDate": "2026-07-20T10:00:00.000Z"
   }'
 ```
 
-- `cadenceDays` defaults to `7` (weekly) if omitted.
-- `anchorDate` is the start of period 0 — the schedule cycles forward and
-  backward from here.
+- `cadenceDays` is `7` for weekly or `14` for biweekly (defaults to `7`).
+- `anchorDate` is the start of period 0, **including the handoff hour** — the
+  schedule cycles forward and backward from this instant.
 
 ## Add or remove an engineer in a rotation's on-call order
 
@@ -95,6 +103,6 @@ curl -X PUT http://localhost:3000/api/rotations/<rotationId>/members \
 The order of `engineerIds` **is** the on-call order. Reordering the array
 reorders the rotation.
 
-> Note: creating rotations and editing membership are API-only today and are
-> good candidates for a future admin UI. If you add that UI, update this page
-> (see the doc-sync rule in `AGENTS.md`).
+> Note: editing rotation membership is API-only today and is a good candidate
+> for a future admin UI. If you add that UI, update this page (see the doc-sync
+> rule in `AGENTS.md`).

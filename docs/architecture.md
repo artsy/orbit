@@ -30,10 +30,13 @@ Relay/Metaphysics layer.
 
 ## The rotation model
 
-- A `Rotation` has `cadenceDays` and an `anchorDate`. `RotationMember` rows give
-  the ordered on-call list (by `position`).
-- The base on-call engineer for a date is computed:
-  `members[floor(daysSinceAnchor / cadenceDays) mod memberCount]`.
+- A `Rotation` has `cadenceDays` (7 = weekly, 14 = biweekly) and an `anchorDate`.
+  The anchor includes a **handoff hour** — the rotation rolls to the next
+  engineer at that time of day. `RotationMember` rows give the ordered on-call
+  list (by `position`).
+- The base on-call engineer for an instant is computed:
+  `members[floor((instant − anchor) / periodLength) mod memberCount]`, where
+  `periodLength = cadenceDays × 24h`.
 - An `Override` replaces the base engineer for an inclusive `[startDate, endDate]`
   range. A swap is two overrides sharing a `swapGroupId`.
 - The schedule is **computed on read** (`getScheduleForRange`) — overrides are

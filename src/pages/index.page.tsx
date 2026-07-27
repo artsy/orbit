@@ -1,4 +1,4 @@
-import { Box, Flex, Spinner, Text } from "@artsy/palette"
+import { Box, Button, Flex, Spinner, Text } from "@artsy/palette"
 import { RotationSchedule } from "components/schedule/RotationSchedule"
 import Link from "next/link"
 import { useRotations } from "utils/hooks/useApi"
@@ -8,7 +8,13 @@ export default function HomePage() {
 
   return (
     <Box>
-      <Text variant="xl">Engineer rotation</Text>
+      <Flex justifyContent="space-between" alignItems="center">
+        <Text variant="xl">Engineer rotation</Text>
+
+        <Link href="/rotations/new" style={{ textDecoration: "none" }}>
+          <Button size="small">New rotation</Button>
+        </Link>
+      </Flex>
 
       {isLoading && (
         <Flex justifyContent="center" py={4}>
@@ -24,7 +30,7 @@ export default function HomePage() {
 
       {!isLoading && !error && (!rotations || rotations.length === 0) && (
         <Text variant="sm" color="mono60" mt={1}>
-          No rotations yet. Create one via the API to get started.
+          No rotations yet. Use “New rotation” to create one.
         </Text>
       )}
 
