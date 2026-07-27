@@ -25,11 +25,27 @@ async function main() {
 
   // --- Engineers -------------------------------------------------------------
   const engineerSeeds = [
-    { name: "Ada Lovelace", email: "ada@artsymail.com" },
-    { name: "Grace Hopper", email: "grace@artsymail.com" },
-    { name: "Alan Turing", email: "alan@artsymail.com" },
-    { name: "Katherine Johnson", email: "katherine@artsymail.com" },
-    { name: "Margaret Hamilton", email: "margaret@artsymail.com" },
+    { name: "Ada Lovelace", email: "ada@artsymail.com", slackUsername: "@ada" },
+    {
+      name: "Grace Hopper",
+      email: "grace@artsymail.com",
+      slackUsername: "@grace",
+    },
+    {
+      name: "Alan Turing",
+      email: "alan@artsymail.com",
+      slackUsername: "@alan",
+    },
+    {
+      name: "Katherine Johnson",
+      email: "katherine@artsymail.com",
+      slackUsername: "@katherine",
+    },
+    {
+      name: "Margaret Hamilton",
+      email: "margaret@artsymail.com",
+      slackUsername: "@margaret",
+    },
   ]
 
   const engineers = []

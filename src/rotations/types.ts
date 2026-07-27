@@ -17,6 +17,7 @@ export interface Engineer {
   id: string
   name: string
   email: string
+  slackUsername: string | null
   active: boolean
   createdAt: string
 }
@@ -91,6 +92,7 @@ export interface ScheduleResponse {
 export interface CreateEngineerBody {
   name: string
   email: string
+  slackUsername?: string | null
   active?: boolean
 }
 
