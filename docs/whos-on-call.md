@@ -38,5 +38,11 @@ the period was changed:
 }
 ```
 
-The period containing today tells you who's on call right now. (The
-`/rotations/[id]` page renders exactly this data.)
+The period containing today tells you who's on call right now.
+
+## In the app
+
+The `/rotations/[id]` page renders this data two ways: a **month calendar**
+overview (each on-call period is a colored bar — base rotation, override, or
+swap) that you can page through, and a **schedule list** below it. Times are
+shown in the rotation's timezone.

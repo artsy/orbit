@@ -1,5 +1,6 @@
 import { Box, Flex, Separator, Spacer, Spinner, Text } from "@artsy/palette"
 import { addDays, formatISO } from "date-fns"
+import dynamic from "next/dynamic"
 import { FC, useMemo } from "react"
 import { Engineer } from "rotations/types"
 import {
@@ -13,6 +14,19 @@ import { CreateOverrideButton, CreateSwapButton } from "components/overrides"
 import { OverridesList } from "components/overrides/OverridesList"
 import { MembersEditor } from "components/members/MembersEditor"
 import { ScheduleTable } from "./ScheduleTable"
+
+// FullCalendar touches the DOM, so load it client-side only.
+const RotationCalendar = dynamic(
+  () => import("./RotationCalendar").then((m) => m.RotationCalendar),
+  {
+    ssr: false,
+    loading: () => (
+      <Flex justifyContent="center" py={4}>
+        <Spinner />
+      </Flex>
+    ),
+  }
+)
 
 interface RotationScheduleProps {
   rotationId?: string
@@ -114,6 +128,16 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         <CreateSwapButton rotationId={rotationId} onDone={handleDone} />
       </Flex>
 
+      <RotationCalendar
+        rotationId={rotationId}
+        timezone={rotation.timezone}
+        engineersById={engineersById}
+      />
+
+      <Spacer y={4} />
+
+      <Text variant="md">Schedule list</Text>
+      <Spacer y={1} />
       <ScheduleTable
         entries={entries}
         engineersById={engineersById}

@@ -107,6 +107,17 @@ test.describe("rotation management", () => {
     ).toBeVisible()
   })
 
+  test("renders the on-call calendar", async ({ page }) => {
+    await mockRotationPage(page, { members: [memberFor("e1", 0)] })
+
+    await page.goto("/rotations/rot-1")
+
+    // FullCalendar mounts client-side (dynamic import); its root + month title
+    // should appear.
+    await expect(page.locator(".fc")).toBeVisible()
+    await expect(page.locator(".fc-toolbar-title")).toBeVisible()
+  })
+
   test("removes an override", async ({ page }) => {
     await mockRotationPage(page, {
       members: [],

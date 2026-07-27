@@ -11,7 +11,7 @@ Relay/Metaphysics layer.
 ## Stack
 
 - **Next.js** (Pages Router, `.page.tsx` convention), TypeScript.
-- **@artsy/palette** for UI; styled-components for SSR styling.
+- **@artsy/palette** for UI; styled-components for SSR styling; **FullCalendar** for the month on-call overview.
 - **next-auth** with a custom Artsy/Gravity OAuth provider.
 - **Prisma + Postgres** for persistence; **SWR** for client data fetching.
 - **Jest** + Testing Library for unit tests; **Playwright** for end-to-end tests.
