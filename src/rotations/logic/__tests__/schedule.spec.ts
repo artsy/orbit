@@ -420,3 +420,56 @@ describe("buildSwap", () => {
     expect(coverForA.endDate).toBe(coverForB.endDate)
   })
 })
+
+// ---------------------------------------------------------------------------
+// cadence and start-hour handling
+// ---------------------------------------------------------------------------
+
+describe("cadence and start-hour handling", () => {
+  it("advances every 14 days for a biweekly cadence", () => {
+    const rotation = makeRotation({ cadenceDays: 14 })
+    expect(
+      computeBaseAssignment(rotation, THREE_MEMBERS, ANCHOR_DATE)
+    ).toBe("eng-a")
+    // day 13 is still period 0
+    expect(
+      computeBaseAssignment(rotation, THREE_MEMBERS, addDays(ANCHOR_DATE, 13))
+    ).toBe("eng-a")
+    // day 14 rolls into period 1
+    expect(
+      computeBaseAssignment(rotation, THREE_MEMBERS, addDays(ANCHOR_DATE, 14))
+    ).toBe("eng-b")
+  })
+
+  it("hands off at the anchor's start hour", () => {
+    const rotation = makeRotation({
+      anchorDate: "2026-01-05T10:00:00.000Z",
+    })
+    // one minute before the weekly handoff hour: still eng-a
+    expect(
+      computeBaseAssignment(
+        rotation,
+        THREE_MEMBERS,
+        new Date("2026-01-12T09:59:00.000Z")
+      )
+    ).toBe("eng-a")
+    // at the handoff hour: rolls to eng-b
+    expect(
+      computeBaseAssignment(
+        rotation,
+        THREE_MEMBERS,
+        new Date("2026-01-12T10:00:00.000Z")
+      )
+    ).toBe("eng-b")
+  })
+
+  it("period bounds begin at the anchor hour", () => {
+    const rotation = makeRotation({ anchorDate: "2026-01-05T10:00:00.000Z" })
+    const bounds = getPeriodBounds(
+      rotation,
+      new Date("2026-01-07T00:00:00.000Z")
+    )
+    expect(bounds.periodStart.toISOString()).toBe("2026-01-05T10:00:00.000Z")
+    expect(bounds.periodEnd.toISOString()).toBe("2026-01-12T10:00:00.000Z")
+  })
+})
