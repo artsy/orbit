@@ -72,11 +72,17 @@ title: Getting started
 |---|---|
 | `yarn dev` | Start the dev server. |
 | `yarn build` | Production build. |
-| `yarn test` | Jest test suite. |
+| `yarn test` | Jest unit test suite. |
+| `yarn e2e` | Playwright end-to-end tests. |
 | `yarn type-check` | `tsc --noEmit`. |
 | `yarn lint` | ESLint. |
 | `yarn seed` | Seed sample data. |
 | `yarn db:up` / `yarn db:down` | Start / stop local Postgres. |
 | `yarn prisma:migrate` | Apply migrations (dev). |
+
+## Testing
+
+- **Unit tests** (`yarn test`): Jest + Testing Library. The rotation logic has full coverage; API routes are tested with `node-mocks-http`.
+- **End-to-end** (`yarn e2e`): Playwright drives the real UI against mocked API responses, with an injected session so it runs as a signed-in user (the auth flow itself is intentionally not e2e-tested). No database is required.
 
 Having trouble? See [Troubleshooting](./troubleshooting.md).

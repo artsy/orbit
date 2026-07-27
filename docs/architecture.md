@@ -14,7 +14,7 @@ Relay/Metaphysics layer.
 - **@artsy/palette** for UI; styled-components for SSR styling.
 - **next-auth** with a custom Artsy/Gravity OAuth provider.
 - **Prisma + Postgres** for persistence; **SWR** for client data fetching.
-- **Jest** + Testing Library for tests.
+- **Jest** + Testing Library for unit tests; **Playwright** for end-to-end tests.
 
 ## Where things live
 

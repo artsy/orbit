@@ -29,7 +29,7 @@ Full documentation lives in [`docs/`](docs/) and is published to
 
 ## Best practices
 
-- Run `yarn type-check`, `yarn lint`, and `yarn test` before committing — CI enforces all three.
+- Run `yarn type-check`, `yarn lint`, and `yarn test` before committing — CI enforces all three. `yarn e2e` runs the Playwright end-to-end suite (also in CI).
 - Keep the pure logic in `src/rotations/logic/` free of DB/UI/IO so it stays unit-testable; add tests there for any schedule-behaviour change.
 - Match the existing style: Prettier (no semicolons, double quotes, ES5 trailing commas), palette components with styled-system props, `.page.tsx` for routes, and `baseUrl: "./src"` imports.
 - Treat `src/rotations/types.ts` as a contract — changing it ripples through the API and UI, so update all consumers together.

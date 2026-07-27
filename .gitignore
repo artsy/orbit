@@ -44,3 +44,8 @@ yarn-error.log*
 # vitepress
 docs/.vitepress/dist
 docs/.vitepress/cache
+
+# playwright
+e2e/.auth
+test-results
+playwright-report
