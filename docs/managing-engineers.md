@@ -1,11 +1,8 @@
 ---
-layout: default
 title: Managing engineers & rotations
 ---
 
 # Managing engineers & rotations
-
-[← Back to home](index.html)
 
 There are two distinct concepts:
 

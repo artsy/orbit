@@ -1,11 +1,8 @@
 ---
-layout: default
 title: Overrides & swaps
 ---
 
 # Overrides & swaps
-
-[← Back to home](index.html)
 
 Overrides and swaps are how the team adjusts the schedule without changing the
 base rotation order. The base round-robin is always recomputed, so removing an

@@ -40,3 +40,7 @@ yarn-error.log*
 
 # prisma
 /src/generated
+
+# vitepress
+docs/.vitepress/dist
+docs/.vitepress/cache

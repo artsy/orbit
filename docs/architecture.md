@@ -1,11 +1,8 @@
 ---
-layout: default
 title: Architecture
 ---
 
 # Architecture
-
-[← Back to home](index.html)
 
 Orbit mirrors Artsy's `forque` internal-tools stack, with one deliberate
 difference: it owns its data, so it uses Prisma + Postgres instead of forque's
@@ -25,7 +22,7 @@ Relay/Metaphysics layer.
 |---|---|
 | `src/rotations/types.ts` | The shared type contract used by every layer. |
 | `src/rotations/logic/` | Pure schedule computation — round-robin, overrides, swaps. No DB/UI. Fully unit-tested. |
-| `src/pages/api/` | REST endpoints (see the [API contract](api-contract.html)), backed by Prisma. |
+| `src/pages/api/` | REST endpoints (see the [API contract](./api-contract.md)), backed by Prisma. |
 | `src/system/` | RBAC (`Role`, `isPermitted`, `assertPermitted`) and app boot. |
 | `src/components/` | Palette UI — the schedule view and the override/swap forms. |
 | `src/pages/` | Routes: home, `/rotations/[id]`, `/engineers`. |
