@@ -1,0 +1,74 @@
+// Orbit — engineer rotation schema.
+// This schema is the shared data contract for all work packages.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Engineer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  memberships          RotationMember[]
+  replacementOverrides Override[]       @relation("ReplacementEngineer")
+  originalOverrides    Override[]       @relation("OriginalEngineer")
+}
+
+model Rotation {
+  id          String   @id @default(cuid())
+  name        String
+  // Length of one on-call period in days (weekly = 7).
+  cadenceDays Int      @default(7)
+  // Start of period 0. The round-robin is computed relative to this instant.
+  anchorDate  DateTime
+  timezone    String   @default("America/New_York")
+  createdAt   DateTime @default(now())
+
+  members   RotationMember[]
+  overrides Override[]
+}
+
+model RotationMember {
+  id         String @id @default(cuid())
+  rotationId String
+  engineerId String
+  // Zero-based order within the rotation's round-robin.
+  position   Int
+
+  rotation Rotation @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  engineer Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@unique([rotationId, engineerId])
+  @@unique([rotationId, position])
+}
+
+model Override {
+  id                    String   @id @default(cuid())
+  rotationId            String
+  // Inclusive date range this override covers.
+  startDate             DateTime
+  endDate               DateTime
+  replacementEngineerId String
+  // Snapshot of who the base rotation had on-call when the override was created.
+  originalEngineerId    String?
+  reason                String?
+  createdByEmail        String
+  // Links the two reciprocal rows produced by a shift swap.
+  swapGroupId           String?
+  createdAt             DateTime @default(now())
+
+  rotation            Rotation  @relation(fields: [rotationId], references: [id], onDelete: Cascade)
+  replacementEngineer Engineer  @relation("ReplacementEngineer", fields: [replacementEngineerId], references: [id])
+  originalEngineer    Engineer? @relation("OriginalEngineer", fields: [originalEngineerId], references: [id])
+
+  @@index([rotationId, startDate, endDate])
+  @@index([swapGroupId])
+}

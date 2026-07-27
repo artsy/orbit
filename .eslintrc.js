@@ -1,0 +1,30 @@
+module.exports = {
+  root: true,
+  env: {
+    es6: true,
+    browser: true,
+    jest: true,
+    node: true,
+  },
+  parser: "@typescript-eslint/parser",
+  plugins: ["@typescript-eslint", "testing-library", "jest-dom"],
+  extends: [
+    "next/core-web-vitals",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier",
+    "plugin:testing-library/react",
+    "plugin:jest-dom/recommended",
+  ],
+  rules: {
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { vars: "all", argsIgnorePattern: "^_" },
+    ],
+    "testing-library/render-result-naming-convention": "off",
+  },
+}
