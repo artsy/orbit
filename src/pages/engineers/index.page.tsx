@@ -1,0 +1,226 @@
+import {
+  Box,
+  Button,
+  Flex,
+  Input,
+  Separator,
+  Spacer,
+  Text,
+  useToasts,
+} from "@artsy/palette"
+import { Form, Formik } from "formik"
+import { useCallback, useEffect, useState } from "react"
+import * as Yup from "yup"
+import { Engineer } from "rotations/types"
+import { createEngineer, deactivateEngineer } from "utils/api/mutations"
+
+interface AddEngineerValues {
+  name: string
+  email: string
+}
+
+const validationSchema = Yup.object().shape({
+  name: Yup.string().required("A name is required"),
+  email: Yup.string()
+    .email("Must be a valid email address")
+    .required("An email is required"),
+})
+
+export default function EngineersPage() {
+  const [engineers, setEngineers] = useState<Engineer[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null)
+  const { sendToast } = useToasts()
+
+  const loadEngineers = useCallback(async () => {
+    setIsLoading(true)
+
+    try {
+      const res = await fetch("/api/engineers")
+      if (!res.ok) throw new Error("Failed to load engineers")
+      const data: Engineer[] = await res.json()
+      setEngineers(data)
+    } catch (error: any) {
+      sendToast({
+        variant: "error",
+        message: "Error loading engineers",
+        description: error?.message,
+      })
+    } finally {
+      setIsLoading(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    loadEngineers()
+  }, [loadEngineers])
+
+  const handleDeactivate = async (engineer: Engineer) => {
+    if (!window.confirm(`Deactivate ${engineer.name}?`)) return
+
+    setDeactivatingId(engineer.id)
+
+    try {
+      const updated = await deactivateEngineer(engineer.id)
+
+      setEngineers((current) =>
+        current.map((e) => (e.id === updated.id ? updated : e))
+      )
+
+      sendToast({
+        variant: "success",
+        message: `${engineer.name} deactivated`,
+      })
+    } catch (error: any) {
+      sendToast({
+        variant: "error",
+        message: "Error deactivating engineer",
+        description: error?.message,
+      })
+    } finally {
+      setDeactivatingId(null)
+    }
+  }
+
+  return (
+    <Box>
+      <Text variant="xl">Engineers</Text>
+
+      <Spacer y={4} />
+
+      <Text variant="lg">Add engineer</Text>
+
+      <Spacer y={2} />
+
+      <Formik<AddEngineerValues>
+        initialValues={{ name: "", email: "" }}
+        validationSchema={validationSchema}
+        onSubmit={async (values, { setSubmitting, resetForm }) => {
+          try {
+            const engineer = await createEngineer(values)
+
+            setEngineers((current) => [...current, engineer])
+            resetForm()
+
+            sendToast({
+              variant: "success",
+              message: `${engineer.name} added`,
+            })
+          } catch (error: any) {
+            sendToast({
+              variant: "error",
+              message: "Error adding engineer",
+              description: error?.message,
+            })
+          } finally {
+            setSubmitting(false)
+          }
+        }}
+      >
+        {({
+          values,
+          errors,
+          touched,
+          isSubmitting,
+          handleChange,
+          handleBlur,
+        }) => (
+          <Box
+            as={Form}
+            display="flex"
+            flexDirection="column"
+            gap={2}
+            maxWidth={400}
+          >
+            <Input
+              name="name"
+              title="Name"
+              value={values.name}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.name && errors.name}
+            />
+
+            <Input
+              name="email"
+              title="Email"
+              type="email"
+              value={values.email}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.email && errors.email}
+            />
+
+            <Button type="submit" loading={isSubmitting} width="fit-content">
+              Add engineer
+            </Button>
+          </Box>
+        )}
+      </Formik>
+
+      <Spacer y={4} />
+
+      <Separator />
+
+      <Spacer y={4} />
+
+      <Text variant="lg">All engineers</Text>
+
+      <Spacer y={2} />
+
+      {isLoading ? (
+        <Text variant="sm" color="mono60">
+          Loading…
+        </Text>
+      ) : engineers.length === 0 ? (
+        <Text variant="sm" color="mono60">
+          No engineers yet.
+        </Text>
+      ) : (
+        <Box display="flex" flexDirection="column" gap={1}>
+          {engineers.map((engineer) => (
+            <Flex
+              key={engineer.id}
+              justifyContent="space-between"
+              alignItems="center"
+              p={2}
+              border="1px solid"
+              borderColor="mono10"
+            >
+              <Box>
+                <Text variant="sm" fontWeight="bold">
+                  {engineer.name}
+                </Text>
+                <Text variant="xs" color="mono60">
+                  {engineer.email}
+                </Text>
+              </Box>
+
+              <Flex alignItems="center" gap={2}>
+                <Text
+                  variant="xs"
+                  color={engineer.active ? "green100" : "mono60"}
+                >
+                  {engineer.active ? "Active" : "Inactive"}
+                </Text>
+
+                {engineer.active && (
+                  <Button
+                    size="small"
+                    variant="secondaryNeutral"
+                    onClick={() => handleDeactivate(engineer)}
+                    loading={deactivatingId === engineer.id}
+                    disabled={deactivatingId !== null}
+                  >
+                    Deactivate
+                  </Button>
+                )}
+              </Flex>
+            </Flex>
+          ))}
+        </Box>
+      )}
+    </Box>
+  )
+}
