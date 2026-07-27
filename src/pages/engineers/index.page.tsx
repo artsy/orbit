@@ -17,6 +17,7 @@ import { createEngineer, deactivateEngineer } from "utils/api/mutations"
 interface AddEngineerValues {
   name: string
   email: string
+  slackUsername: string
 }
 
 const validationSchema = Yup.object().shape({
@@ -94,11 +95,15 @@ export default function EngineersPage() {
       <Spacer y={2} />
 
       <Formik<AddEngineerValues>
-        initialValues={{ name: "", email: "" }}
+        initialValues={{ name: "", email: "", slackUsername: "" }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           try {
-            const engineer = await createEngineer(values)
+            const engineer = await createEngineer({
+              name: values.name,
+              email: values.email,
+              slackUsername: values.slackUsername || null,
+            })
 
             setEngineers((current) => [...current, engineer])
             resetForm()
@@ -152,6 +157,16 @@ export default function EngineersPage() {
               error={touched.email && errors.email}
             />
 
+            <Input
+              name="slackUsername"
+              title="Slack username"
+              placeholder="e.g. @ada or ada"
+              value={values.slackUsername}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={touched.slackUsername && errors.slackUsername}
+            />
+
             <Button type="submit" loading={isSubmitting} width="fit-content">
               Add engineer
             </Button>
@@ -195,6 +210,11 @@ export default function EngineersPage() {
                 <Text variant="xs" color="mono60">
                   {engineer.email}
                 </Text>
+                {engineer.slackUsername && (
+                  <Text variant="xs" color="mono60">
+                    Slack: {engineer.slackUsername}
+                  </Text>
+                )}
               </Box>
 
               <Flex alignItems="center" gap={2}>

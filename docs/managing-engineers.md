@@ -19,8 +19,8 @@ way to get one is to sign in through the app in your browser.
 
 ## Add an engineer
 
-**In the UI:** go to **`/engineers`**, enter the person's name and email, and
-submit.
+**In the UI:** go to **`/engineers`**, enter the person's name, email, and
+(optionally) their Slack username, and submit.
 
 **Via the API:**
 
@@ -28,8 +28,14 @@ submit.
 curl -X POST http://localhost:3000/api/engineers \
   -H "Content-Type: application/json" \
   -H "Cookie: <your-session-cookie>" \
-  -d '{ "name": "Ada Lovelace", "email": "ada@artsymail.com" }'
+  -d '{
+    "name": "Ada Lovelace",
+    "email": "ada@artsymail.com",
+    "slackUsername": "@ada"
+  }'
 ```
+
+`slackUsername` is optional and can be updated later via `PATCH /api/engineers/[id]`.
 
 ## Remove (deactivate) an engineer
 

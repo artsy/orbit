@@ -11,11 +11,12 @@ datasource db {
 }
 
 model Engineer {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  slackUsername String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
   memberships          RotationMember[]
   replacementOverrides Override[]       @relation("ReplacementEngineer")
