@@ -513,3 +513,43 @@ describe("inactive engineers", () => {
     ).toBe("eng-a")
   })
 })
+
+// ---------------------------------------------------------------------------
+// timezone correctness (DST)
+// ---------------------------------------------------------------------------
+
+import { TZDate } from "@date-fns/tz"
+
+describe("timezone correctness", () => {
+  it("keeps the handoff at the same wall-clock hour across a DST change", () => {
+    // US DST springs forward on 2026-03-08. Anchor a weekly rotation at
+    // 09:00 America/New_York on 2026-03-01 (EST).
+    const rotation = makeRotation({
+      anchorDate: new TZDate(
+        2026,
+        2, // March
+        1,
+        9,
+        0,
+        0,
+        0,
+        "America/New_York"
+      ).toISOString(),
+      timezone: "America/New_York",
+      cadenceDays: 7,
+    })
+
+    // The next period starts after DST begins — still 09:00 local, not 10:00.
+    const bounds = getPeriodBounds(
+      rotation,
+      new Date("2026-03-10T12:00:00.000Z")
+    )
+    const localStart = new TZDate(
+      bounds.periodStart.getTime(),
+      "America/New_York"
+    )
+    expect(localStart.getHours()).toBe(9)
+    // And it is the 2026-03-08 handoff.
+    expect(localStart.getDate()).toBe(8)
+  })
+})

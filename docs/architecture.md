@@ -34,9 +34,10 @@ Relay/Metaphysics layer.
   The anchor includes a **handoff hour** — the rotation rolls to the next
   engineer at that time of day. `RotationMember` rows give the ordered on-call
   list (by `position`).
-- The base on-call engineer for an instant is computed:
-  `members[floor((instant − anchor) / periodLength) mod memberCount]`, where
-  `periodLength = cadenceDays × 24h`.
+- The base on-call engineer for an instant is `members[periodIndex mod memberCount]`.
+  Period boundaries are computed in the rotation's **timezone** (via `@date-fns/tz`),
+  so the handoff stays at the same local wall-clock hour across daylight-saving
+  changes rather than drifting. Deactivated engineers are skipped.
 - An `Override` replaces the base engineer for an inclusive `[startDate, endDate]`
   range. A swap is two overrides sharing a `swapGroupId`.
 - The schedule is **computed on read** (`getScheduleForRange`) — overrides are

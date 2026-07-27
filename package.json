@@ -29,6 +29,7 @@
   "dependencies": {
     "@artsy/icons": "^3.74.0",
     "@artsy/palette": "^46.9.3",
+    "@date-fns/tz": "^1.5.0",
     "@prisma/client": "^6.19.3",
     "@styled-system/theme-get": "^5.1.2",
     "cookie": "^0.6.0",

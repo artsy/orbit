@@ -114,7 +114,11 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         <CreateSwapButton rotationId={rotationId} onDone={handleDone} />
       </Flex>
 
-      <ScheduleTable entries={entries} engineersById={engineersById} />
+      <ScheduleTable
+        entries={entries}
+        engineersById={engineersById}
+        timezone={rotation.timezone}
+      />
 
       <Spacer y={4} />
       <Separator />
