@@ -18,6 +18,8 @@ export interface Engineer {
   name: string
   email: string
   slackUsername: string | null
+  /** Slack user ID (e.g. "U01427GSPK9") for @mentions; distinct from the handle. */
+  slackUserId: string | null
   active: boolean
   createdAt: string
 }
@@ -94,6 +96,7 @@ export interface CreateEngineerBody {
   name: string
   email: string
   slackUsername?: string | null
+  slackUserId?: string | null
   active?: boolean
 }
 

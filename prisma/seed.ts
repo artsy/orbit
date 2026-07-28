@@ -14,6 +14,10 @@ const prisma = new PrismaClient()
 // Fixed anchor date so the seeded schedule is stable across runs — a Monday.
 const ANCHOR_DATE = new Date("2026-07-20T00:00:00.000Z")
 
+// artsy/release-lookout's ROTATION_EPOCH — the start of the biweekly release
+// captain rotation, so period 0 maps to the first captain in the list.
+const RELEASE_EPOCH = new Date("2026-06-11T00:00:00.000Z")
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 async function main() {
@@ -126,6 +130,45 @@ async function main() {
     }),
   ])
 
+  // --- Release Captain rotation ---------------------------------------------
+  // Mirrors artsy/release-lookout's biweekly captain rotation: an ordered list
+  // handed off every two weeks, anchored to release-lookout's ROTATION_EPOCH so
+  // period 0 = the first captain. `slackUserId` is what a Slack bot needs to
+  // @mention the on-call captain (the handle is display-only).
+  const releaseCaptainSeeds = [
+    { name: "Brian B", email: "brian.b@artsymail.com", slackUsername: "@brian.b", slackUserId: "URE5S7BBN" },
+    { name: "Ole", email: "ole@artsymail.com", slackUsername: "@ole", slackUserId: "U01RRGTBMU3" },
+    { name: "Mounir", email: "mounir@artsymail.com", slackUsername: "@mounir", slackUserId: "U01427GSPK9" },
+    { name: "Sultan", email: "sultan@artsymail.com", slackUsername: "@sultan", slackUserId: "U02CNMURE7R" },
+    { name: "George", email: "george@artsymail.com", slackUsername: "@george", slackUserId: "U023RJ49TUN" },
+    { name: "Daria", email: "daria@artsymail.com", slackUsername: "@daria", slackUserId: "U02HAF8J1QV" },
+    { name: "Carlos", email: "carlos@artsymail.com", slackUsername: "@carlos", slackUserId: "U02DTPDPGTA" },
+  ]
+
+  const releaseCaptains = []
+  for (const seed of releaseCaptainSeeds) {
+    releaseCaptains.push(await prisma.engineer.create({ data: seed }))
+  }
+
+  const releaseRotation = await prisma.rotation.create({
+    data: {
+      name: "Release Captain",
+      description:
+        "Biweekly release-captain rotation (mirrors artsy/release-lookout).",
+      cadenceDays: 14,
+      anchorDate: RELEASE_EPOCH,
+      timezone: "America/New_York",
+    },
+  })
+
+  await prisma.rotationMember.createMany({
+    data: releaseCaptains.map((engineer, position) => ({
+      rotationId: releaseRotation.id,
+      engineerId: engineer.id,
+      position,
+    })),
+  })
+
   console.log("Seed complete:")
   console.log(`  - ${engineers.length} engineers (${engineers.map((e) => e.name).join(", ")})`)
   console.log(`  - 1 rotation: "${rotation.name}" (cadence ${rotation.cadenceDays}d, anchor ${rotation.anchorDate.toISOString()})`)
@@ -133,6 +176,11 @@ async function main() {
   console.log(`  - 1 override: ${grace.name} covers ${ada.name} (${override.startDate.toISOString()} - ${override.endDate.toISOString()})`)
   console.log(`  - 1 swap (swapGroupId=${swapGroupId}): ${alan.name} <-> ${katherine.name}, ${swapOverrides.length} reciprocal overrides`)
   console.log(`  - ${margaret.name} remains on the unmodified base round-robin`)
+  console.log(
+    `  - 1 rotation: "${releaseRotation.name}" (biweekly), ${releaseCaptains.length} captains: ${releaseCaptains
+      .map((e) => e.name)
+      .join(", ")}`
+  )
 }
 
 main()

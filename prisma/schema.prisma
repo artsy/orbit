@@ -15,6 +15,9 @@ model Engineer {
   name          String
   email         String   @unique
   slackUsername String?
+  // Slack user ID (e.g. "U01427GSPK9") — lets Slack bots @mention the engineer;
+  // the handle above is for display.
+  slackUserId   String?
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 

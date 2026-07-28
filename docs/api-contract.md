@@ -24,6 +24,10 @@ on missing resource `404 { error }`.
 | PATCH | `/api/engineers/[id]` | `UpdateEngineerBody` | `Engineer` |
 | DELETE | `/api/engineers/[id]` | — | `Engineer` (hard-deletes; also removes their memberships and covering overrides) |
 
+An `Engineer` has an optional `slackUsername` (display handle) and
+`slackUserId` (Slack user ID, for bot `@mentions`); `CreateEngineerBody` /
+`UpdateEngineerBody` accept both.
+
 ## Rotations — domain `rotations`
 
 | Method | Route | Body | Response |
