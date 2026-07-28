@@ -490,7 +490,6 @@ describe("inactive engineers", () => {
         id: engineerId,
         name: engineerId,
         email: `${engineerId}@example.com`,
-        slackUsername: null,
         slackUserId: null,
         active,
         createdAt: "2026-01-01T00:00:00.000Z",

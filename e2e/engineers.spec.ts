@@ -7,7 +7,6 @@ test.describe("engineers", () => {
         id: "e1",
         name: "Ada Lovelace",
         email: "ada@artsymail.com",
-        slackUsername: "@ada",
         active: true,
         createdAt: "2026-01-01T00:00:00.000Z",
       },
@@ -22,7 +21,7 @@ test.describe("engineers", () => {
             id: "e2",
             name: body.name,
             email: body.email,
-            slackUsername: body.slackUsername ?? null,
+            slackUserId: body.slackUserId ?? null,
             active: true,
             createdAt: "2026-01-02T00:00:00.000Z",
           },
@@ -37,7 +36,7 @@ test.describe("engineers", () => {
 
     await page.locator('input[name="name"]').fill("Grace Hopper")
     await page.locator('input[name="email"]').fill("grace@artsymail.com")
-    await page.locator('input[name="slackUsername"]').fill("@grace")
+    await page.locator('input[name="slackUserId"]').fill("U0GRACE123")
 
     await page.getByRole("button", { name: "Add engineer" }).click()
 
@@ -53,7 +52,6 @@ test.describe("engineers", () => {
         id: "e1",
         name: "Ada Lovelace",
         email: "ada@artsymail.com",
-        slackUsername: "@ada",
         active: true,
         createdAt: "2026-01-01T00:00:00.000Z",
       },
@@ -61,7 +59,6 @@ test.describe("engineers", () => {
         id: "e2",
         name: "Grace Hopper",
         email: "grace@artsymail.com",
-        slackUsername: "@grace",
         active: true,
         createdAt: "2026-01-01T00:00:00.000Z",
       },

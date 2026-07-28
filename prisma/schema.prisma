@@ -14,10 +14,9 @@ model Engineer {
   id            String   @id @default(cuid())
   name          String
   email         String   @unique
-  slackUsername String?
-  // Slack user ID (e.g. "U01427GSPK9") — lets Slack bots @mention the engineer;
-  // the handle above is for display.
-  slackUserId   String?
+  // Slack user ID (e.g. "U01427GSPK9") — stable identifier used to @mention the
+  // engineer (unlike a handle, it doesn't change if the person renames).
+  slackUserId String?
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 

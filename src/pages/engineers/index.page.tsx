@@ -17,7 +17,6 @@ import { createEngineer, deleteEngineer } from "utils/api/mutations"
 interface AddEngineerValues {
   name: string
   email: string
-  slackUsername: string
   slackUserId: string
 }
 
@@ -99,14 +98,13 @@ export default function EngineersPage() {
       <Spacer y={2} />
 
       <Formik<AddEngineerValues>
-        initialValues={{ name: "", email: "", slackUsername: "", slackUserId: "" }}
+        initialValues={{ name: "", email: "", slackUserId: "" }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           try {
             const engineer = await createEngineer({
               name: values.name,
               email: values.email,
-              slackUsername: values.slackUsername || null,
               slackUserId: values.slackUserId || null,
             })
 
@@ -163,16 +161,6 @@ export default function EngineersPage() {
             />
 
             <Input
-              name="slackUsername"
-              title="Slack username"
-              placeholder="e.g. @ada or ada"
-              value={values.slackUsername}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.slackUsername && errors.slackUsername}
-            />
-
-            <Input
               name="slackUserId"
               title="Slack user ID"
               placeholder="e.g. U01427GSPK9 (for bot @mentions)"
@@ -226,10 +214,9 @@ export default function EngineersPage() {
                 <Text variant="xs" color="mono60">
                   {engineer.email}
                 </Text>
-                {engineer.slackUsername && (
+                {engineer.slackUserId && (
                   <Text variant="xs" color="mono60">
-                    Slack: {engineer.slackUsername}
-                    {engineer.slackUserId ? ` (${engineer.slackUserId})` : ""}
+                    Slack ID: {engineer.slackUserId}
                   </Text>
                 )}
               </Box>

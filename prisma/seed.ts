@@ -29,27 +29,11 @@ async function main() {
 
   // --- Engineers -------------------------------------------------------------
   const engineerSeeds = [
-    { name: "Ada Lovelace", email: "ada@artsymail.com", slackUsername: "@ada" },
-    {
-      name: "Grace Hopper",
-      email: "grace@artsymail.com",
-      slackUsername: "@grace",
-    },
-    {
-      name: "Alan Turing",
-      email: "alan@artsymail.com",
-      slackUsername: "@alan",
-    },
-    {
-      name: "Katherine Johnson",
-      email: "katherine@artsymail.com",
-      slackUsername: "@katherine",
-    },
-    {
-      name: "Margaret Hamilton",
-      email: "margaret@artsymail.com",
-      slackUsername: "@margaret",
-    },
+    { name: "Ada Lovelace", email: "ada@artsymail.com" },
+    { name: "Grace Hopper", email: "grace@artsymail.com" },
+    { name: "Alan Turing", email: "alan@artsymail.com" },
+    { name: "Katherine Johnson", email: "katherine@artsymail.com" },
+    { name: "Margaret Hamilton", email: "margaret@artsymail.com" },
   ]
 
   const engineers = []
@@ -135,14 +119,16 @@ async function main() {
   // handed off every two weeks, anchored to release-lookout's ROTATION_EPOCH so
   // period 0 = the first captain. `slackUserId` is what a Slack bot needs to
   // @mention the on-call captain (the handle is display-only).
+  // slackUserId is null where we don't yet have a Slack user ID (Adam, Janae).
   const releaseCaptainSeeds = [
-    { name: "Brian B", email: "brian.b@artsymail.com", slackUsername: "@brian.b", slackUserId: "URE5S7BBN" },
-    { name: "Ole", email: "ole@artsymail.com", slackUsername: "@ole", slackUserId: "U01RRGTBMU3" },
-    { name: "Mounir", email: "mounir@artsymail.com", slackUsername: "@mounir", slackUserId: "U01427GSPK9" },
-    { name: "Sultan", email: "sultan@artsymail.com", slackUsername: "@sultan", slackUserId: "U02CNMURE7R" },
-    { name: "George", email: "george@artsymail.com", slackUsername: "@george", slackUserId: "U023RJ49TUN" },
-    { name: "Daria", email: "daria@artsymail.com", slackUsername: "@daria", slackUserId: "U02HAF8J1QV" },
-    { name: "Carlos", email: "carlos@artsymail.com", slackUsername: "@carlos", slackUserId: "U02DTPDPGTA" },
+    { name: "Sultan Al-Maari", email: "Sultan.Al-Maari@artsymail.com", slackUserId: "U02CNMURE7R" },
+    { name: "George Kartalis", email: "George.Kartalis@artsymail.com", slackUserId: "U023RJ49TUN" },
+    { name: "Brian Beckerle", email: "brian.beckerle@artsymail.com", slackUserId: "URE5S7BBN" },
+    { name: "Mounir Dhahri", email: "Mounir.Dhahri@artsymail.com", slackUserId: "U01427GSPK9" },
+    { name: "Daria Kozlova", email: "Daria.Kozlova@artsymail.com", slackUserId: "U02HAF8J1QV" },
+    { name: "Carlos", email: "carlos@artsymail.com", slackUserId: "U02DTPDPGTA" },
+    { name: "Adam Iskounen", email: "adam.iskounen@artsymail.com", slackUserId: null },
+    { name: "Janae Edwards", email: "janae.edwards@artsymail.com", slackUserId: null },
   ]
 
   const releaseCaptains = []
