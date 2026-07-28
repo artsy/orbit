@@ -37,6 +37,13 @@ An `Engineer` has an optional `slackUserId` (the Slack user ID, for bot
 | GET | `/api/rotations/[id]` | — | `Rotation` |
 | PATCH | `/api/rotations/[id]` | `UpdateRotationBody` | `Rotation` |
 | DELETE | `/api/rotations/[id]` | — | `Rotation` |
+| GET | `/api/rotations/[id]/on-call` | — | `OnCallResponse` |
+
+`GET /api/rotations/[id]/on-call` is a convenience view of **who's on call now
+and next** (overrides/swaps applied), so callers don't have to fetch the full
+schedule and do the date math. `OnCallResponse` is
+`{ current: OnCallSlot | null, next: OnCallSlot | null }`, where `OnCallSlot` is
+`{ engineer: Engineer | null, periodStart, periodEnd }` (ISO dates).
 
 A `Rotation` includes an optional `description` (string, nullable) — free-text
 notes on the rotation's purpose. Both `CreateRotationBody` and

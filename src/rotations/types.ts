@@ -87,6 +87,21 @@ export interface ScheduleResponse {
   entries: ScheduleEntry[]
 }
 
+/** One on-call slot: who is effectively on call and for which period. */
+export interface OnCallSlot {
+  engineer: Engineer | null
+  /** Start of the period (inclusive), ISO string. */
+  periodStart: string
+  /** End of the period (exclusive), ISO string. */
+  periodEnd: string
+}
+
+/** Convenience view of who's on call right now and next (see /on-call). */
+export interface OnCallResponse {
+  current: OnCallSlot | null
+  next: OnCallSlot | null
+}
+
 // ---------------------------------------------------------------------------
 // API request bodies
 // ---------------------------------------------------------------------------
