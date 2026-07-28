@@ -42,9 +42,9 @@ The period containing today tells you who's on call right now.
 
 ## In the app
 
-The `/rotations/[id]` page renders this data two ways: a **month calendar**
-overview (each on-call period is a colored bar) that you can page through, and a
-**schedule list** below it. Times are shown in the rotation's timezone. Every
+The `/rotations/[id]` page renders this data two ways: a **calendar** overview
+(each on-call period is a colored bar) that you can page through and switch
+between a **2 weeks** and a **Month** view, and a **schedule list** below it. Times are shown in the rotation's timezone. Every
 engineer has a **stable color** used consistently across the calendar bars, the
 schedule-list dots, and the home-page preview, so the same person always reads
 as the same color. On the calendar, an overridden or swapped period keeps the

@@ -148,7 +148,21 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
       <FullCalendar
         plugins={[dayGridPlugin]}
         initialView="dayGridMonth"
-        headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+        headerToolbar={{
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridTwoWeek,dayGridMonth",
+        }}
+        views={{
+          dayGridTwoWeek: {
+            type: "dayGrid",
+            duration: { weeks: 2 },
+            buttonText: "2 weeks",
+          },
+          dayGridMonth: {
+            buttonText: "Month",
+          },
+        }}
         events={events}
         eventContent={renderEvent}
         eventOrder="start,sortKey"

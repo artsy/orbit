@@ -129,6 +129,30 @@ test.describe("rotation management", () => {
     await expect(page.locator(".fc-toolbar-title")).toBeVisible()
   })
 
+  test("switches between the 2 weeks and Month calendar views", async ({
+    page,
+  }) => {
+    await mockRotationPage(page, { members: [memberFor("e1", 0)] })
+
+    await page.goto("/rotations/rot-1")
+
+    // Both view options are offered; Month is the default active view.
+    const twoWeek = page.getByRole("button", { name: "2 weeks" })
+    const month = page.getByRole("button", { name: "Month", exact: true })
+    await expect(twoWeek).toBeVisible()
+    await expect(month).toBeVisible()
+    await expect(page.locator(".fc-dayGridMonth-button")).toHaveClass(
+      /fc-button-active/
+    )
+
+    // Switching to the 2-week view makes it the active one.
+    await twoWeek.click()
+    await expect(page.locator(".fc-dayGridTwoWeek-button")).toHaveClass(
+      /fc-button-active/
+    )
+    await expect(page.locator(".fc")).toBeVisible()
+  })
+
   test("removes an override", async ({ page }) => {
     await mockRotationPage(page, {
       members: [],
