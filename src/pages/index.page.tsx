@@ -1,7 +1,6 @@
-import { Box, Button, Flex, Pill, Spinner, Text } from "@artsy/palette"
+import { Box, Button, Flex, Spinner, Text } from "@artsy/palette"
 import Link from "next/link"
 import { CurrentOnCall } from "components/schedule/CurrentOnCall"
-import { TIMEZONE_LABELS } from "rotations/timezones"
 import { useRotations } from "utils/hooks/useApi"
 
 export default function HomePage() {
@@ -47,10 +46,6 @@ export default function HomePage() {
                   : rotation.cadenceDays === 14
                   ? "Biweekly"
                   : `Every ${rotation.cadenceDays} days`
-              const timezoneLabel =
-                (TIMEZONE_LABELS as Record<string, string>)[
-                  rotation.timezone
-                ] ?? rotation.timezone
 
               return (
                 <Box
@@ -67,10 +62,9 @@ export default function HomePage() {
                     <Text variant="sm-display">{rotation.name}</Text>
                   </Link>
 
-                  <Flex gap={0.5} mt={0.5}>
-                    <Pill>{cadenceLabel}</Pill>
-                    <Pill>{timezoneLabel}</Pill>
-                  </Flex>
+                  <Text variant="xs" color="mono60">
+                    {cadenceLabel} rotation
+                  </Text>
 
                   <Box mt={0.5}>
                     <CurrentOnCall rotation={rotation} />
