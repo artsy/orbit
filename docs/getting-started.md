@@ -7,7 +7,7 @@ title: Getting started
 ## Prerequisites
 
 - Node.js ≥ 22.5 (see `.nvmrc`)
-- Yarn
+- **Yarn 4**, managed by [Corepack](https://nodejs.org/api/corepack.html). Run `corepack enable` once; the repo pins the exact version via the `packageManager` field, so the right Yarn is used automatically.
 - Docker (for local Postgres)
 
 ## Setup
