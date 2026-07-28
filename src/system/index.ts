@@ -12,6 +12,9 @@ export type UserWithAccessToken = User & {
 export enum Role {
   team = "team",
   product_development = "product_development",
+  // Non-human principal authenticated by a service token (see utils/auth).
+  // Read-only: granted `read` below, never `manage`.
+  service = "service",
 }
 
 export enum Action {
@@ -24,15 +27,15 @@ export enum Action {
 // internal tool where any team member may add overrides and swaps.
 const PERMISSIONS: Record<string, Partial<Record<Action, Role[]>>> = {
   engineers: {
-    [Action.read]: [Role.team],
+    [Action.read]: [Role.team, Role.service],
     [Action.manage]: [Role.team],
   },
   rotations: {
-    [Action.read]: [Role.team],
+    [Action.read]: [Role.team, Role.service],
     [Action.manage]: [Role.team],
   },
   overrides: {
-    [Action.read]: [Role.team],
+    [Action.read]: [Role.team, Role.service],
     [Action.manage]: [Role.team],
   },
 }
