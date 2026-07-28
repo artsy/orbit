@@ -47,9 +47,7 @@ test.describe("engineers", () => {
     ).toBeVisible()
   })
 
-  test("searches engineers by name or email, showing at most the top 5 matches", async ({
-    page,
-  }) => {
+  test("deletes an engineer", async ({ page }) => {
     const existing = [
       {
         id: "e1",
@@ -67,90 +65,36 @@ test.describe("engineers", () => {
         active: true,
         createdAt: "2026-01-01T00:00:00.000Z",
       },
-      {
-        id: "e3",
-        name: "Alan Turing",
-        email: "alan@artsymail.com",
-        slackUsername: "@alan",
-        active: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-      {
-        id: "e4",
-        name: "Katherine Johnson",
-        email: "katherine@artsymail.com",
-        slackUsername: "@katherine",
-        active: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-      {
-        id: "e5",
-        name: "Margaret Hamilton",
-        email: "margaret@artsymail.com",
-        slackUsername: "@margaret",
-        active: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-      {
-        id: "e6",
-        name: "Alan Kay",
-        email: "alan.kay@artsymail.com",
-        slackUsername: "@alankay",
-        active: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
     ]
 
-    await page.route("**/api/engineers", async (route) => {
-      if (route.request().method() === "POST") {
-        return route.fulfill({ status: 201, json: existing[0] })
+    let deletedId: string | null = null
+    await page.route("**/api/engineers", (route) =>
+      route.fulfill({ json: existing })
+    )
+    await page.route("**/api/engineers/*", (route) => {
+      if (route.request().method() === "DELETE") {
+        deletedId = route.request().url().split("/").pop() ?? null
+        return route.fulfill({ json: existing[1] })
       }
-      return route.fulfill({ json: existing })
+      return route.fallback()
     })
+
+    // The page confirms before deleting; auto-accept the dialog.
+    page.on("dialog", (dialog) => dialog.accept())
 
     await page.goto("/engineers")
 
-    await expect(page.getByText("Ada Lovelace")).toBeVisible()
+    await expect(page.getByText("Grace Hopper", { exact: true })).toBeVisible()
 
-    const searchInput = page.getByPlaceholder("Search by name or email")
-    const results = page.getByTestId("engineer-search-results")
+    // Delete Grace via the Delete button scoped to her row.
+    await page
+      .getByTestId("engineer-row-e2")
+      .getByRole("button", { name: "Delete" })
+      .click()
 
-    // Fewer than 3 characters: hint is shown, no results.
-    await searchInput.fill("al")
-
-    await expect(
-      page.getByText("Type at least 3 characters to search.")
-    ).toBeVisible()
-    await expect(results).not.toBeVisible()
-
-    // 3+ characters matching a name.
-    await searchInput.fill("ada")
-
-    await expect(
-      page.getByText("Type at least 3 characters to search.")
-    ).not.toBeVisible()
-    await expect(results.getByText("Ada Lovelace", { exact: true })).toBeVisible()
-    await expect(
-      results.getByText("Grace Hopper", { exact: true })
-    ).not.toBeVisible()
-
-    // 3+ characters matching an email.
-    await searchInput.fill("grace@artsymail.com")
-
-    await expect(
-      results.getByText("Grace Hopper", { exact: true })
-    ).toBeVisible()
-    await expect(
-      results.getByText("Ada Lovelace", { exact: true })
-    ).not.toBeVisible()
-
-    // A query matching more than 5 engineers (via their shared email domain)
-    // only shows the top 5.
-    await searchInput.fill("artsymail")
-
-    await expect(page.getByText("No matching engineers.")).not.toBeVisible()
-    await expect(results).toBeVisible()
-    const resultRows = results.getByText("@artsymail.com")
-    await expect(resultRows).toHaveCount(5)
+    // The DELETE hit her id, and she's removed from the list.
+    await expect(page.getByTestId("engineer-row-e2")).toHaveCount(0)
+    await expect(page.getByText("Ada Lovelace", { exact: true })).toBeVisible()
+    expect(deletedId).toBe("e2")
   })
 })

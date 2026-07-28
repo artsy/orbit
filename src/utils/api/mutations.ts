@@ -67,7 +67,7 @@ export async function updateEngineer(
   })
 }
 
-export async function deactivateEngineer(id: string): Promise<Engineer> {
+export async function deleteEngineer(id: string): Promise<Engineer> {
   return request<Engineer>(`/api/engineers/${id}`, {
     method: "DELETE",
   })

@@ -47,9 +47,18 @@ export default async function handler(
       const existing = await prisma.engineer.findUnique({ where: { id } })
       if (!existing) return sendError(res, 404, "Engineer not found")
 
-      const engineer = await prisma.engineer.update({
-        where: { id },
-        data: { active: false },
+      // Hard delete. Remove dependent rows first to avoid FK violations:
+      // overrides this engineer covers are dropped, the originalEngineer
+      // snapshot is nulled where it pointed at them, and their rotation
+      // memberships are removed.
+      const engineer = await prisma.$transaction(async (tx) => {
+        await tx.override.deleteMany({ where: { replacementEngineerId: id } })
+        await tx.override.updateMany({
+          where: { originalEngineerId: id },
+          data: { originalEngineerId: null },
+        })
+        await tx.rotationMember.deleteMany({ where: { engineerId: id } })
+        return tx.engineer.delete({ where: { id } })
       })
       return res.status(200).json(serializeEngineer(engineer))
     }
