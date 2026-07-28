@@ -1,6 +1,6 @@
 import { Button, ModalDialog } from "@artsy/palette"
 import { useEffect, useState } from "react"
-import { Engineer, ScheduleEntry } from "rotations/types"
+import { Engineer, Override, ScheduleEntry } from "rotations/types"
 import { OverrideForm } from "./OverrideForm"
 import { SwapForm, SwapFormValues } from "./SwapForm"
 
@@ -74,6 +74,8 @@ export interface SwapModalProps {
   onClose: () => void
   onDone?: () => void
   initialValues?: Partial<SwapFormValues>
+  /** When set, the modal edits the existing swap made of these override ids. */
+  replaceOverrideIds?: string[]
 }
 
 export const SwapModal: React.FC<SwapModalProps> = ({
@@ -85,17 +87,58 @@ export const SwapModal: React.FC<SwapModalProps> = ({
   onClose,
   onDone,
   initialValues,
+  replaceOverrideIds,
 }) => {
   if (!isOpen) return null
 
   return (
-    <ModalDialog title="Swap shifts" onClose={onClose} width={["100%", 500]}>
+    <ModalDialog
+      title={replaceOverrideIds?.length ? "Edit swap" : "Swap shifts"}
+      onClose={onClose}
+      width={["100%", 500]}
+    >
       <SwapForm
         rotationId={rotationId}
         engineers={engineers}
         entries={entries}
         timezone={timezone}
         initialValues={initialValues}
+        replaceOverrideIds={replaceOverrideIds}
+        onCancel={onClose}
+        onDone={() => {
+          onClose()
+          onDone?.()
+        }}
+      />
+    </ModalDialog>
+  )
+}
+
+export interface OverrideModalProps {
+  rotationId: string
+  engineers: Engineer[]
+  override: Override
+  isOpen: boolean
+  onClose: () => void
+  onDone?: () => void
+}
+
+export const OverrideModal: React.FC<OverrideModalProps> = ({
+  rotationId,
+  engineers,
+  override,
+  isOpen,
+  onClose,
+  onDone,
+}) => {
+  if (!isOpen) return null
+
+  return (
+    <ModalDialog title="Edit override" onClose={onClose} width={["100%", 500]}>
+      <OverrideForm
+        rotationId={rotationId}
+        engineers={engineers}
+        override={override}
         onCancel={onClose}
         onDone={() => {
           onClose()

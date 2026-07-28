@@ -1,12 +1,14 @@
 import { Box, Button, Flex, Input, Select, useToasts } from "@artsy/palette"
 import { Form, Formik } from "formik"
 import * as Yup from "yup"
-import { Engineer } from "rotations/types"
-import { createOverride } from "utils/api/mutations"
+import { Engineer, Override } from "rotations/types"
+import { createOverride, updateOverride } from "utils/api/mutations"
 
 export interface OverrideFormProps {
   rotationId: string
   engineers: Engineer[]
+  /** When provided, the form edits this override instead of creating one. */
+  override?: Override
   onDone?: () => void
   onCancel?: () => void
 }
@@ -40,6 +42,7 @@ const validationSchema = Yup.object().shape({
 export const OverrideForm: React.FC<OverrideFormProps> = ({
   rotationId,
   engineers,
+  override,
   onDone,
   onCancel,
 }) => {
@@ -50,34 +53,45 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
     text: engineer.name,
   }))
 
+  const isEditing = !!override
+
   return (
     <Formik<OverrideFormValues>
+      enableReinitialize
       initialValues={{
-        replacementEngineerId: "",
-        startDate: "",
-        endDate: "",
-        reason: "",
+        replacementEngineerId: override?.replacementEngineerId ?? "",
+        startDate: override ? override.startDate.slice(0, 10) : "",
+        endDate: override ? override.endDate.slice(0, 10) : "",
+        reason: override?.reason ?? "",
       }}
       validationSchema={validationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         try {
-          await createOverride(rotationId, {
-            replacementEngineerId: values.replacementEngineerId,
-            startDate: values.startDate,
-            endDate: values.endDate,
-            reason: values.reason || null,
-          })
-
-          sendToast({
-            variant: "success",
-            message: "Override created",
-          })
+          if (override) {
+            await updateOverride(override.id, {
+              replacementEngineerId: values.replacementEngineerId,
+              startDate: values.startDate,
+              endDate: values.endDate,
+              reason: values.reason || null,
+            })
+            sendToast({ variant: "success", message: "Override updated" })
+          } else {
+            await createOverride(rotationId, {
+              replacementEngineerId: values.replacementEngineerId,
+              startDate: values.startDate,
+              endDate: values.endDate,
+              reason: values.reason || null,
+            })
+            sendToast({ variant: "success", message: "Override created" })
+          }
 
           onDone?.()
         } catch (error: any) {
           sendToast({
             variant: "error",
-            message: "Error creating override",
+            message: isEditing
+              ? "Error updating override"
+              : "Error creating override",
             description: error?.message,
           })
         } finally {
@@ -150,7 +164,7 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
             )}
 
             <Button type="submit" loading={isSubmitting}>
-              Create override
+              {isEditing ? "Save changes" : "Create override"}
             </Button>
           </Flex>
         </Box>

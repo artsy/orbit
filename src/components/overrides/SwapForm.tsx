@@ -4,7 +4,7 @@ import { format, parseISO } from "date-fns"
 import { Form, Formik, useFormikContext } from "formik"
 import * as Yup from "yup"
 import { Engineer, ScheduleEntry } from "rotations/types"
-import { createSwap } from "utils/api/mutations"
+import { createSwap, deleteOverride } from "utils/api/mutations"
 
 export interface SwapFormProps {
   rotationId: string
@@ -12,6 +12,11 @@ export interface SwapFormProps {
   entries: ScheduleEntry[]
   timezone: string
   initialValues?: Partial<SwapFormValues>
+  /**
+   * When editing an existing swap, the ids of its overrides — they are deleted
+   * and replaced with a fresh swap on submit.
+   */
+  replaceOverrideIds?: string[]
   onDone?: () => void
   onCancel?: () => void
 }
@@ -70,6 +75,7 @@ interface SwapFormFieldsProps {
   engineerOptions: { value: string; text: string }[]
   entries: ScheduleEntry[]
   timezone: string
+  submitLabel: string
   onCancel?: () => void
 }
 
@@ -77,6 +83,7 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
   engineerOptions,
   entries,
   timezone,
+  submitLabel,
   onCancel,
 }) => {
   const {
@@ -172,7 +179,7 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
         )}
 
         <Button type="submit" loading={isSubmitting}>
-          Swap shifts
+          {submitLabel}
         </Button>
       </Flex>
     </Box>
@@ -185,10 +192,12 @@ export const SwapForm: React.FC<SwapFormProps> = ({
   entries,
   timezone,
   initialValues,
+  replaceOverrideIds,
   onDone,
   onCancel,
 }) => {
   const { sendToast } = useToasts()
+  const isEditing = !!replaceOverrideIds?.length
 
   const engineerOptions = engineers.map((engineer) => ({
     value: engineer.id,
@@ -209,6 +218,11 @@ export const SwapForm: React.FC<SwapFormProps> = ({
       validationSchema={validationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         try {
+          // Editing a swap = replace its overrides with a fresh swap.
+          if (replaceOverrideIds?.length) {
+            await Promise.all(replaceOverrideIds.map((id) => deleteOverride(id)))
+          }
+
           await createSwap(rotationId, {
             engineerAId: values.engineerAId,
             engineerBId: values.engineerBId,
@@ -219,14 +233,14 @@ export const SwapForm: React.FC<SwapFormProps> = ({
 
           sendToast({
             variant: "success",
-            message: "Shifts swapped",
+            message: isEditing ? "Swap updated" : "Shifts swapped",
           })
 
           onDone?.()
         } catch (error: any) {
           sendToast({
             variant: "error",
-            message: "Error swapping shifts",
+            message: isEditing ? "Error updating swap" : "Error swapping shifts",
             description: error?.message,
           })
         } finally {
@@ -238,6 +252,7 @@ export const SwapForm: React.FC<SwapFormProps> = ({
         engineerOptions={engineerOptions}
         entries={entries}
         timezone={timezone}
+        submitLabel={isEditing ? "Save changes" : "Swap shifts"}
         onCancel={onCancel}
       />
     </Formik>

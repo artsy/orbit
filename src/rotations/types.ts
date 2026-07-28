@@ -123,6 +123,14 @@ export interface CreateOverrideBody {
   swapGroupId?: string | null
 }
 
+/** Editable fields of an existing override (see PATCH /api/overrides/[id]). */
+export interface UpdateOverrideBody {
+  startDate?: string
+  endDate?: string
+  replacementEngineerId?: string
+  reason?: string | null
+}
+
 /** Swap the upcoming shifts of two engineers. */
 export interface CreateSwapBody {
   engineerAId: string

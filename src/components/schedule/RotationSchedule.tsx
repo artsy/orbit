@@ -1,10 +1,20 @@
-import { Box, Flex, Separator, Spacer, Spinner, Text } from "@artsy/palette"
+import {
+  Box,
+  Button,
+  Flex,
+  ModalDialog,
+  Separator,
+  Spacer,
+  Spinner,
+  Text,
+  useToasts,
+} from "@artsy/palette"
 import { addDays, formatISO, parseISO } from "date-fns"
 import { useSWRConfig } from "swr"
 import { useSession } from "next-auth/react"
 import dynamic from "next/dynamic"
 import { FC, useMemo, useState } from "react"
-import { Engineer, ScheduleEntry } from "rotations/types"
+import { Engineer, Override, ScheduleEntry } from "rotations/types"
 import {
   useEngineers,
   useMembers,
@@ -12,9 +22,11 @@ import {
   useRotation,
   useSchedule,
 } from "utils/hooks/useApi"
+import { deleteOverride } from "utils/api/mutations"
 import {
   CreateOverrideButton,
   CreateSwapButton,
+  OverrideModal,
   SwapModal,
 } from "components/overrides"
 import { SwapFormValues } from "components/overrides/SwapForm"
@@ -68,12 +80,21 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const { error: membersError, mutate: mutateMembers } = useMembers(rotationId)
   const { data: engineers, error: engineersError } = useEngineers()
   const { mutate: globalMutate } = useSWRConfig()
+  const { sendToast } = useToasts()
   const session = useSession()
   const myEmail = session.data?.user?.email
   const [swapPrefill, setSwapPrefill] = useState<
     Partial<SwapFormValues> | undefined
   >(undefined)
   const [swapOpen, setSwapOpen] = useState(false)
+  // Override/swap actions triggered from a calendar bar.
+  const [actionEntry, setActionEntry] = useState<ScheduleEntry | null>(null)
+  const [editingOverride, setEditingOverride] = useState<Override | null>(null)
+  const [editingSwap, setEditingSwap] = useState<{
+    prefill: Partial<SwapFormValues>
+    replaceIds: string[]
+  } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const cadenceDays = rotation?.cadenceDays ?? DEFAULT_CADENCE_DAYS
 
@@ -92,7 +113,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     error: scheduleError,
     isLoading: scheduleLoading,
   } = useSchedule(rotationId, start, end)
-  const { mutate: mutateOverrides } = useOverrides(rotationId)
+  const { data: overrides, mutate: mutateOverrides } = useOverrides(rotationId)
 
   const engineersById = useMemo<Record<string, Engineer>>(() => {
     const map: Record<string, Engineer> = {}
@@ -166,6 +187,67 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     setSwapOpen(true)
   }
 
+  const handleOverrideAction = (entry: ScheduleEntry) => {
+    if (entry.override) setActionEntry(entry)
+  }
+
+  const groupFor = (override: Override): Override[] =>
+    override.swapGroupId
+      ? (overrides ?? []).filter((o) => o.swapGroupId === override.swapGroupId)
+      : []
+
+  const startModify = () => {
+    const ov = actionEntry?.override
+    if (!ov) return
+
+    const group = groupFor(ov)
+    if (ov.swapGroupId && group.length === 2) {
+      const [first, second] = group
+      setEditingSwap({
+        prefill: {
+          engineerAId: first.originalEngineerId ?? "",
+          dateA: first.startDate,
+          engineerBId: second.originalEngineerId ?? "",
+          dateB: second.startDate,
+          reason: first.reason ?? "",
+        },
+        replaceIds: group.map((o) => o.id),
+      })
+    } else {
+      setEditingOverride(ov)
+    }
+    setActionEntry(null)
+  }
+
+  const handleDeleteAction = async () => {
+    const ov = actionEntry?.override
+    if (!ov) return
+    setDeleting(true)
+    try {
+      const ids = ov.swapGroupId
+        ? groupFor(ov).map((o) => o.id)
+        : [ov.id]
+      await Promise.all(ids.map((id) => deleteOverride(id)))
+      sendToast({
+        variant: "success",
+        message: ov.swapGroupId ? "Swap removed" : "Override removed",
+      })
+      setActionEntry(null)
+      handleDone()
+    } catch (error: any) {
+      sendToast({
+        variant: "error",
+        message: "Error removing",
+        description: error?.message,
+      })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const nameFor = (id: string | null) =>
+    id ? engineersById[id]?.name ?? "Unknown engineer" : "Unassigned"
+
   return (
     <Box>
       <Text variant="lg-display">{rotation.name}</Text>
@@ -207,7 +289,71 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         timezone={rotation.timezone}
         engineersById={engineersById}
         onSwapRequest={handleRowClick}
+        onOverrideAction={handleOverrideAction}
       />
+
+      {actionEntry?.override && (
+        <ModalDialog
+          title={actionEntry.override.swapGroupId ? "Swap" : "Override"}
+          onClose={() => setActionEntry(null)}
+          width={["100%", 460]}
+        >
+          <Text variant="sm">
+            {nameFor(actionEntry.effectiveEngineerId)} is covering{" "}
+            {nameFor(actionEntry.baseEngineerId)}&apos;s shift.
+          </Text>
+          {actionEntry.override.reason && (
+            <Text variant="xs" color="mono60" mt={0.5}>
+              {actionEntry.override.reason}
+            </Text>
+          )}
+
+          <Flex justifyContent="flex-end" gap={1} mt={2}>
+            <Button
+              variant="secondaryBlack"
+              onClick={() => setActionEntry(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="secondaryNeutral"
+              onClick={handleDeleteAction}
+              loading={deleting}
+            >
+              Delete
+            </Button>
+            <Button onClick={startModify} disabled={deleting}>
+              Modify
+            </Button>
+          </Flex>
+        </ModalDialog>
+      )}
+
+      {editingOverride && (
+        <OverrideModal
+          rotationId={rotationId}
+          engineers={engineers ?? []}
+          override={editingOverride}
+          isOpen
+          onClose={() => setEditingOverride(null)}
+          onDone={handleDone}
+        />
+      )}
+
+      {editingSwap && (
+        <SwapModal
+          rotationId={rotationId}
+          engineers={engineers ?? []}
+          entries={entries}
+          timezone={rotation.timezone}
+          isOpen
+          initialValues={editingSwap.prefill}
+          replaceOverrideIds={editingSwap.replaceIds}
+          onClose={() => setEditingSwap(null)}
+          onDone={handleDone}
+        />
+      )}
 
       <Spacer y={4} />
 
