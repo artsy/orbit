@@ -66,6 +66,63 @@ title: Getting started
 | `NEXTAUTH_SECRET` | next-auth session/JWT secret. |
 | `PUBLIC_GRAVITY_URL` | Gravity URL exposed to the client. |
 
+## Authenticating with a different provider
+
+Orbit ships with a single **Artsy/Gravity** OAuth provider, which needs internal
+Artsy credentials. If you're running your own instance (e.g. as an open-source
+contributor), you can authenticate against a different provider instead of — or
+alongside — Artsy. Auth is [next-auth](https://next-auth.js.org), so any
+OAuth2/OIDC provider works.
+
+**1. Add the provider** to the `providers` array in
+`src/pages/api/auth/[...nextauth].page.ts`. Use a next-auth built-in (e.g.
+`GithubProvider` / `GoogleProvider` from `next-auth/providers/*`) or a custom
+block mirroring the Artsy one. For example, GitHub:
+
+```ts
+import GithubProvider from "next-auth/providers/github"
+
+// inside providers: [ ... ]
+GithubProvider({
+  clientId: process.env.GITHUB_ID!,
+  clientSecret: process.env.GITHUB_SECRET!,
+  profile(profile) {
+    return {
+      id: String(profile.id),
+      name: profile.name ?? profile.login,
+      email: profile.email,
+      image: profile.avatar_url,
+      // See gotcha (a) below — supply a role the app recognizes.
+      roles: ["team"],
+    }
+  },
+})
+```
+
+A sign-in button for each configured provider appears on the login screen
+automatically (the button list is driven by next-auth's `getProviders()`), so no
+UI change is needed.
+
+**2. Set its credentials** as environment variables and register the provider's
+callback URL with it:
+
+```
+${NEXTAUTH_URL}/api/auth/callback/<provider-id>
+# e.g. http://localhost:3000/api/auth/callback/github
+```
+
+**Two gotchas:**
+
+- **(a) Roles gate everything.** The `signIn` callback only admits users whose
+  `roles` include a value from the `Role` enum, and RBAC in
+  `src/system/index.ts` requires the `team` role for every action. So your
+  provider's `profile()` must return a recognized role (the example synthesizes
+  `roles: ["team"]`). Alternatively, add a new role to the `Role` enum and grant
+  it in the `PERMISSIONS` map — e.g. a read-only role listed only under
+  `Action.read`.
+- **(b) It's still next-auth.** `NEXTAUTH_URL` and `NEXTAUTH_SECRET` must be set
+  as usual; only the `providers` array and its credentials change.
+
 ## Useful scripts
 
 | Script | Does |

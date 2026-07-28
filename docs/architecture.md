@@ -47,4 +47,7 @@ Relay/Metaphysics layer.
 
 Sign-in is Artsy/Gravity OAuth via next-auth. Reads and writes both require the
 Gravity `team` role; the check lives in `src/system/index.ts` and is enforced in
-each API route via `assertPermitted`.
+each API route via `assertPermitted`. The login screen renders a button per
+configured provider, so you can authenticate against a different OAuth/OIDC
+provider — see
+[Authenticating with a different provider](getting-started.md#authenticating-with-a-different-provider).
