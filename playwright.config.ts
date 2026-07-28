@@ -28,7 +28,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "yarn dev",
+    // Use the raw Next dev server (not `yarn dev`, which runs the migration
+    // guard) — the e2e suite mocks the API and has no database.
+    command: "yarn dev:next",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

@@ -4,7 +4,8 @@
   "private": true,
   "packageManager": "yarn@4.17.1",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/check-migrations.mjs && next dev",
+    "dev:next": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src --ext .ts,.tsx",
