@@ -31,7 +31,17 @@ export default function EngineersPage() {
   const [engineers, setEngineers] = useState<Engineer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
   const { sendToast } = useToasts()
+
+  const q = query.trim().toLowerCase()
+  const searchResults = engineers
+    .filter(
+      (engineer) =>
+        engineer.name.toLowerCase().includes(q) ||
+        engineer.email.toLowerCase().includes(q)
+    )
+    .slice(0, 5)
 
   const loadEngineers = useCallback(async () => {
     setIsLoading(true)
@@ -177,6 +187,56 @@ export default function EngineersPage() {
       <Spacer y={4} />
 
       <Separator />
+
+      <Spacer y={4} />
+
+      <Text variant="lg">Find an engineer</Text>
+
+      <Spacer y={2} />
+
+      <Box maxWidth={400}>
+        <Input
+          title="Search engineers"
+          placeholder="Search by name or email"
+          value={query}
+          onChange={(e) => setQuery(e.currentTarget.value)}
+        />
+      </Box>
+
+      <Spacer y={2} />
+
+      {query.trim().length <= 2 ? (
+        <Text variant="xs" color="mono60">
+          Type at least 3 characters to search.
+        </Text>
+      ) : searchResults.length === 0 ? (
+        <Text variant="sm" color="mono60">
+          No matching engineers.
+        </Text>
+      ) : (
+        <Box
+          data-testid="engineer-search-results"
+          display="flex"
+          flexDirection="column"
+          gap={1}
+        >
+          {searchResults.map((engineer) => (
+            <Box
+              key={engineer.id}
+              p={2}
+              border="1px solid"
+              borderColor="mono10"
+            >
+              <Text variant="sm" fontWeight="bold">
+                {engineer.name}
+              </Text>
+              <Text variant="xs" color="mono60">
+                {engineer.email}
+              </Text>
+            </Box>
+          ))}
+        </Box>
+      )}
 
       <Spacer y={4} />
 

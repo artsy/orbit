@@ -1,4 +1,6 @@
-import { Flex, Stack, Text } from "@artsy/palette"
+import { Clickable, Flex, Stack, Text } from "@artsy/palette"
+import ArtsyMarkIcon from "@artsy/icons/ArtsyMarkIcon"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
 import type { UserWithAccessToken } from "system"
 
@@ -18,7 +20,10 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
     >
       <Stack flexDirection="row" gap={2} alignItems="center">
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
-          <Text variant="lg-display">Orbit</Text>
+          <Flex alignItems="center" gap={0.5}>
+            <ArtsyMarkIcon fill="mono0" width={24} height={24} />
+            <Text variant="lg-display">Orbit</Text>
+          </Flex>
         </Link>
         {user && (
           <>
@@ -39,9 +44,14 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
       </Stack>
 
       {user && (
-        <Text variant="xs" color="mono30">
-          {user.email}
-        </Text>
+        <Flex alignItems="center" gap={2}>
+          <Text variant="xs" color="mono30">
+            {user.email}
+          </Text>
+          <Clickable onClick={() => signOut({ callbackUrl: "/" })}>
+            <Text variant="sm">Log out</Text>
+          </Clickable>
+        </Flex>
       )}
     </Flex>
   )

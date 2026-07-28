@@ -37,6 +37,13 @@ curl -X POST http://localhost:3000/api/engineers \
 
 `slackUsername` is optional and can be updated later via `PATCH /api/engineers/[id]`.
 
+## Find an engineer
+
+**In the UI:** on **`/engineers`**, use the **Find an engineer** search box to
+look up someone by name or email. Results appear once you've typed more than 2
+characters, and show the top 5 matches (case-insensitive substring match on
+name or email).
+
 ## Remove (deactivate) an engineer
 
 Engineers are **soft-deactivated** (`active: false`) rather than deleted, so
