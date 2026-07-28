@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: orbit
       POSTGRES_DB: orbit_development
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - orbit_pgdata:/var/lib/postgresql/data
 

@@ -28,6 +28,16 @@ through the platform team.
 - Is Postgres running? `yarn db:up` starts it via docker-compose.
 - Does `DATABASE_URL` match `docker-compose.yml`? The default is in `.env.example`.
 - Have you applied migrations? Run `yarn prisma:migrate`.
+- `Environment variable not found: DATABASE_URL` from a `prisma` command: the
+  Prisma CLI only reads a plain `.env` file, not `.env.local`. Run
+  `cp .env.local .env` and re-run the command.
+- `P1010: User was denied access on the database` even though `.env` looks
+  right: something else on your machine is already listening on port 5432 (a
+  Homebrew/system Postgres, for example) and is intercepting the connection
+  before it reaches the Docker container. Check with
+  `lsof -nP -iTCP:5432 -sTCP:LISTEN`. Orbit's docker-compose Postgres publishes
+  on host port **5433** for exactly this reason — make sure `DATABASE_URL`
+  points at `5433`, not `5432`.
 
 ### `PrismaClient did not initialize` / missing client types
 
