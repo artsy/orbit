@@ -60,6 +60,12 @@ title: Getting started
    yarn dev
    ```
 
+   `yarn dev` first verifies your local database has the committed migrations
+   applied — if it's behind, it stops and tells you to run `yarn prisma:migrate`
+   so you don't run the app against a stale schema. (If Postgres simply isn't
+   running yet it just warns and continues. Use `yarn dev:next` to skip the
+   check.)
+
    Open <http://localhost:3000> and sign in with Artsy. Only users with the
    Gravity `team` role can sign in and make changes.
 
