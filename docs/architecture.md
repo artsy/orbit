@@ -15,6 +15,7 @@ Relay/Metaphysics layer.
 - **next-auth** with a custom Artsy/Gravity OAuth provider.
 - **Prisma + Postgres** for persistence; **SWR** for client data fetching.
 - **Jest** + Testing Library for unit tests; **Playwright** for end-to-end tests.
+- **Hokusai** (Docker + Kubernetes) for deployment — see [Deployment](./deployment.md).
 
 ## Where things live
 

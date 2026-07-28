@@ -25,6 +25,7 @@ export default defineConfig({
           },
           { text: "Overrides & swaps", link: "/overrides-and-swaps" },
           { text: "Architecture", link: "/architecture" },
+          { text: "Deployment", link: "/deployment" },
           { text: "Troubleshooting", link: "/troubleshooting" },
         ],
       },

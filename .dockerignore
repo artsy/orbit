@@ -22,3 +22,10 @@ node_modules
 npm-debug.log
 .vscode
 redis.conf
+
+# Build artifacts / local caches — regenerated inside the image
+.next
+.swc
+coverage
+test-results
+playwright-report

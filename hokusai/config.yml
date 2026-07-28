@@ -1,2 +1,9 @@
 ---
 project-name: orbit
+# Run Prisma migrations against the environment's database before rolling out
+# the new image, so schema changes land before the app that depends on them.
+pre-deploy: yarn prisma:deploy
+# Shared Artsy Kubernetes template vars (e.g. externalIngressAllowSourceIP used
+# by the Ingress in staging.yml / production.yml).
+template-config-files:
+  - s3://artsy-citadel/k8s/hokusai-vars.yml
