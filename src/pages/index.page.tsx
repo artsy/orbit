@@ -1,6 +1,7 @@
-import { Box, Button, Flex, Spinner, Text } from "@artsy/palette"
+import { Box, Button, Flex, Pill, Spinner, Text } from "@artsy/palette"
 import Link from "next/link"
 import { CurrentOnCall } from "components/schedule/CurrentOnCall"
+import { TIMEZONE_LABELS } from "rotations/timezones"
 import { useRotations } from "utils/hooks/useApi"
 
 export default function HomePage() {
@@ -38,18 +39,45 @@ export default function HomePage() {
         <Box mt={2}>
           <Text variant="md">Rotations</Text>
 
-          <Box mt={1}>
-            {rotations.map((rotation) => (
-              <Box key={rotation.id} py={1}>
-                <Link
-                  href={`/rotations/${rotation.id}`}
-                  style={{ color: "inherit" }}
+          <Box mt={1} display="flex" flexDirection="column" gap={1}>
+            {rotations.map((rotation) => {
+              const cadenceLabel =
+                rotation.cadenceDays === 7
+                  ? "Weekly"
+                  : rotation.cadenceDays === 14
+                  ? "Biweekly"
+                  : `Every ${rotation.cadenceDays} days`
+              const timezoneLabel =
+                (TIMEZONE_LABELS as Record<string, string>)[
+                  rotation.timezone
+                ] ?? rotation.timezone
+
+              return (
+                <Box
+                  key={rotation.id}
+                  p={2}
+                  border="1px solid"
+                  borderColor="mono10"
+                  borderRadius={4}
                 >
-                  <Text variant="sm-display">{rotation.name}</Text>
-                </Link>
-                <CurrentOnCall rotation={rotation} />
-              </Box>
-            ))}
+                  <Link
+                    href={`/rotations/${rotation.id}`}
+                    style={{ color: "inherit" }}
+                  >
+                    <Text variant="sm-display">{rotation.name}</Text>
+                  </Link>
+
+                  <Flex gap={0.5} mt={0.5}>
+                    <Pill>{cadenceLabel}</Pill>
+                    <Pill>{timezoneLabel}</Pill>
+                  </Flex>
+
+                  <Box mt={0.5}>
+                    <CurrentOnCall rotation={rotation} />
+                  </Box>
+                </Box>
+              )
+            })}
           </Box>
         </Box>
       )}

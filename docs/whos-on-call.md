@@ -63,7 +63,9 @@ A period with no override shows just the single on-call name. Clicking a row
 opens a pre-filled **Swap shifts** dialog suggesting a trade between that shift's
 engineer and you.
 
-The home page (`/`) only lists rotations, each with a compact **"… is on call
-until …"** preview (shown as **"You are on call until …"** when you are the one
-on call). Full schedule details — the calendar and this table — live on the
-rotation's own `/rotations/[id]` page, not on the home page.
+The home page (`/`) lists rotations as **cards**, each showing the rotation's
+cadence (e.g. **Weekly**, **Biweekly**, or **Every N days**) and timezone as
+small pills, plus a compact **"… is on call until …"** preview (shown as
+**"You are on call until …"** when you are the one on call). Full schedule
+details — the calendar and this table — live on the rotation's own
+`/rotations/[id]` page, not on the home page.

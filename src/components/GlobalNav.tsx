@@ -2,13 +2,41 @@ import { Clickable, Flex, Stack, Text } from "@artsy/palette"
 import ArtsyMarkIcon from "@artsy/icons/ArtsyMarkIcon"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
+import { useRouter } from "next/router"
+import { useThemeMode } from "system/ThemeMode"
 import type { UserWithAccessToken } from "system"
 
 interface GlobalNavProps {
   user?: UserWithAccessToken
 }
 
+// A nav link that underlines and brightens when its section is active.
+const NavLink: React.FC<{ href: string; active: boolean; label: string }> = ({
+  href,
+  active,
+  label,
+}) => (
+  <Link href={href} style={{ color: "inherit", textDecoration: "none" }}>
+    <Text
+      variant="sm"
+      style={{
+        opacity: active ? 1 : 0.7,
+        textDecoration: active ? "underline" : "none",
+      }}
+    >
+      {label}
+    </Text>
+  </Link>
+)
+
 export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
+  const router = useRouter()
+  const { mode, toggle } = useThemeMode()
+
+  const rotationsActive =
+    router.pathname === "/" || router.pathname.startsWith("/rotations")
+  const engineersActive = router.pathname.startsWith("/engineers")
+
   return (
     <Flex
       bg="mono100"
@@ -27,32 +55,31 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
         </Link>
         {user && (
           <>
-            <Link
-              href="/"
-              style={{ color: "inherit", textDecoration: "none" }}
-            >
-              <Text variant="sm">Rotations</Text>
-            </Link>
-            <Link
+            <NavLink href="/" active={rotationsActive} label="Rotations" />
+            <NavLink
               href="/engineers"
-              style={{ color: "inherit", textDecoration: "none" }}
-            >
-              <Text variant="sm">Engineers</Text>
-            </Link>
+              active={engineersActive}
+              label="Engineers"
+            />
           </>
         )}
       </Stack>
 
-      {user && (
-        <Flex alignItems="center" gap={2}>
-          <Text variant="xs" color="mono30">
-            {user.email}
-          </Text>
-          <Clickable onClick={() => signOut({ callbackUrl: "/" })}>
-            <Text variant="sm">Log out</Text>
-          </Clickable>
-        </Flex>
-      )}
+      <Flex alignItems="center" gap={2}>
+        <Clickable onClick={toggle} aria-label="Toggle color theme">
+          <Text variant="sm">{mode === "light" ? "Dark" : "Light"}</Text>
+        </Clickable>
+        {user && (
+          <>
+            <Text variant="xs" color="mono30">
+              {user.email}
+            </Text>
+            <Clickable onClick={() => signOut({ callbackUrl: "/" })}>
+              <Text variant="sm">Log out</Text>
+            </Clickable>
+          </>
+        )}
+      </Flex>
     </Flex>
   )
 }

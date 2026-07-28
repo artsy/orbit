@@ -54,3 +54,11 @@ each API route via `assertPermitted`. The login screen renders a button per
 configured provider, so you can authenticate against a different OAuth/OIDC
 provider — see
 [Authenticating with a different provider](getting-started.md#authenticating-with-a-different-provider).
+
+## Theming
+
+The UI is built with [@artsy/palette](https://github.com/artsy/palette) and
+supports **light and dark** themes. `src/system/ThemeMode.tsx` wraps the app in
+palette's `Theme` and exposes a toggle (in the top nav); the choice is persisted
+to `localStorage`. Because components use palette's theme-aware color tokens
+(`mono0`…`mono100`, etc.), most of the UI adapts automatically.

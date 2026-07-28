@@ -44,6 +44,7 @@ const renderEvent = (arg: EventContentArg) => {
 
   return (
     <div
+      className={clickable ? "orbit-event-clickable" : undefined}
       style={{
         ...base,
         background: color,
@@ -143,6 +144,12 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
 
   return (
     <Box>
+      <style>{`
+        .fc .fc-day-sat, .fc .fc-day-sun { background: rgba(0, 0, 0, 0.03); }
+        .fc .fc-day-today { background: rgba(0, 0, 0, 0.06) !important; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25); }
+        .orbit-event-clickable { transition: filter 0.1s ease; }
+        .orbit-event-clickable:hover { filter: brightness(0.9); }
+      `}</style>
       {isLoading && (
         <Text variant="xs" color="mono60" mb={0.5}>
           Updating…

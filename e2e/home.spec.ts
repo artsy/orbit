@@ -60,10 +60,10 @@ test.describe("home", () => {
     await expect(page.getByText("No rotations yet")).toBeVisible()
   })
 
-  test("lists rotations as links with a who-is-on-call preview", async ({
+  test("lists rotations as cards with cadence/timezone chips and a who-is-on-call preview", async ({
     page,
   }) => {
-    const rotA = rotation("rot-1", "Platform on-call")
+    const rotA = { ...rotation("rot-1", "Platform on-call"), timezone: "Europe/London" }
     const rotB = rotation("rot-2", "Support")
 
     await page.route("**/api/rotations", (route) =>
@@ -90,6 +90,10 @@ test.describe("home", () => {
     // Someone else on call → their name; the current user → "You are on call".
     await expect(page.getByText(/Ada Lovelace is on call until/)).toBeVisible()
     await expect(page.getByText(/You are on call until/)).toBeVisible()
+
+    // Each card shows a cadence chip and a timezone chip.
+    await expect(page.getByText("Weekly").first()).toBeVisible()
+    await expect(page.getByText("London (Europe/London)")).toBeVisible()
   })
 
   test("does not render inline schedule details, even with a single rotation", async ({
