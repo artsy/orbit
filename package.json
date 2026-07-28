@@ -37,7 +37,7 @@
     "@fullcalendar/react": "6.1.21",
     "@prisma/client": "^6.19.3",
     "@styled-system/theme-get": "^5.1.2",
-    "cookie": "^0.6.0",
+    "cookie": "^0.7.0",
     "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "lodash": "^4.17.21",
