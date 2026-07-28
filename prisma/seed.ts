@@ -119,7 +119,6 @@ async function main() {
   // handed off every two weeks, anchored to release-lookout's ROTATION_EPOCH so
   // period 0 = the first captain. `slackUserId` is what a Slack bot needs to
   // @mention the on-call captain (the handle is display-only).
-  // slackUserId is null where we don't yet have a Slack user ID (Adam, Janae).
   const releaseCaptainSeeds = [
     { name: "Sultan Al-Maari", email: "Sultan.Al-Maari@artsymail.com", slackUserId: "U02CNMURE7R" },
     { name: "George Kartalis", email: "George.Kartalis@artsymail.com", slackUserId: "U023RJ49TUN" },
@@ -127,8 +126,9 @@ async function main() {
     { name: "Mounir Dhahri", email: "Mounir.Dhahri@artsymail.com", slackUserId: "U01427GSPK9" },
     { name: "Daria Kozlova", email: "Daria.Kozlova@artsymail.com", slackUserId: "U02HAF8J1QV" },
     { name: "Carlos", email: "carlos@artsymail.com", slackUserId: "U02DTPDPGTA" },
-    { name: "Adam Iskounen", email: "adam.iskounen@artsymail.com", slackUserId: null },
-    { name: "Janae Edwards", email: "janae.edwards@artsymail.com", slackUserId: null },
+    { name: "Adam Iskounen", email: "adam.iskounen@artsymail.com", slackUserId: "UDQF9AV09" },
+    { name: "Janae Edwards", email: "janae.edwards@artsymail.com", slackUserId: "UBDKQ4S0J" },
+    { name: "Ole Richter", email: "ole.richter@artsymail.com", slackUserId: "U01RRGTBMU3" },
   ]
 
   const releaseCaptains = []
