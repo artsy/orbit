@@ -50,7 +50,9 @@ schedule-list dots, and the home-page preview, so the same person always reads
 as the same color. On the calendar, an overridden or swapped period keeps the
 covering engineer's color with an `(override)` / `(swap)` suffix, and stacks a
 separate muted, struck-through bar for the originally scheduled engineer **above**
-it — so overrides read separately from who is really on call.
+it — so overrides read separately from who is really on call. Tapping the on-call
+(main person) bar opens the same pre-filled **Swap shifts** dialog as clicking a
+row in the schedule list.
 
 Following the Opsgenie / incident.io convention, the schedule list surfaces
 overrides **separately** from who is really on call. Each On-call cell shows the

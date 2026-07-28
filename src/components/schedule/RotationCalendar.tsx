@@ -5,7 +5,7 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import FullCalendar from "@fullcalendar/react"
 import { format, parseISO } from "date-fns"
 import { FC, useMemo, useState } from "react"
-import { Engineer } from "rotations/types"
+import { Engineer, ScheduleEntry } from "rotations/types"
 import { engineerColor } from "rotations/colors"
 import { useSchedule } from "utils/hooks/useApi"
 
@@ -14,7 +14,7 @@ import { useSchedule } from "utils/hooks/useApi"
 // struck-through bar for the originally scheduled engineer, stacked above it —
 // so overrides read separately from who is really on call.
 const renderEvent = (arg: EventContentArg) => {
-  const { kind, color, label } = arg.event.extendedProps
+  const { kind, color, label, clickable } = arg.event.extendedProps
   const base: React.CSSProperties = {
     borderRadius: 4,
     padding: "0 4px",
@@ -43,7 +43,14 @@ const renderEvent = (arg: EventContentArg) => {
   }
 
   return (
-    <div style={{ ...base, background: color, color: "#FFFFFF" }}>
+    <div
+      style={{
+        ...base,
+        background: color,
+        color: "#FFFFFF",
+        cursor: clickable ? "pointer" : undefined,
+      }}
+    >
       {arg.event.title}
       {label ? ` (${label})` : ""}
     </div>
@@ -54,6 +61,8 @@ interface RotationCalendarProps {
   rotationId: string
   timezone: string
   engineersById: Record<string, Engineer>
+  /** Tapping the on-call (main person) bar requests a swap for that period. */
+  onSwapRequest?: (entry: ScheduleEntry) => void
 }
 
 // Calendar date (YYYY-MM-DD) of an instant, in the rotation's timezone.
@@ -64,6 +73,7 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
   rotationId,
   timezone,
   engineersById,
+  onSwapRequest,
 }) => {
   // FullCalendar reports the visible window via datesSet; we fetch the schedule
   // for exactly that range.
@@ -119,12 +129,14 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
           color: engineerColor(entry.effectiveEngineerId),
           label: isSwap ? "swap" : isOverride ? "override" : null,
           sortKey: 1,
+          clickable: !!onSwapRequest,
+          entry,
         },
       })
     })
 
     return result
-  }, [schedule, engineersById, timezone])
+  }, [schedule, engineersById, timezone, onSwapRequest])
 
   return (
     <Box>
@@ -140,6 +152,12 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
         events={events}
         eventContent={renderEvent}
         eventOrder="start,sortKey"
+        eventClick={(arg) => {
+          const props = arg.event.extendedProps
+          if (props.kind === "effective" && props.entry) {
+            onSwapRequest?.(props.entry as ScheduleEntry)
+          }
+        }}
         eventDisplay="block"
         height="auto"
         firstDay={1}
