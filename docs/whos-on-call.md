@@ -64,8 +64,8 @@ opens a pre-filled **Swap shifts** dialog suggesting a trade between that shift'
 engineer and you.
 
 The home page (`/`) lists rotations as **cards**, each showing the rotation's
-cadence (e.g. **Weekly**, **Biweekly**, or **Every N days**) and timezone as
-small pills, plus a compact **"… is on call until …"** preview (shown as
-**"You are on call until …"** when you are the one on call). Full schedule
-details — the calendar and this table — live on the rotation's own
+cadence as a caption (e.g. **Weekly rotation**, **Biweekly rotation**, or
+**Every N days rotation**) plus a compact **"… is on call until …"** preview
+(shown as **"You are on call until …"** when you are the one on call). Full
+schedule details — the calendar and this table — live on the rotation's own
 `/rotations/[id]` page, not on the home page.
