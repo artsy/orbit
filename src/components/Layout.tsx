@@ -1,5 +1,6 @@
-import { Box, Button, Text, Toasts } from "@artsy/palette"
-import { signIn } from "next-auth/react"
+import { Box, Button, Stack, Text, Toasts } from "@artsy/palette"
+import { getProviders, signIn } from "next-auth/react"
+import { useEffect, useState } from "react"
 import { GlobalNav } from "./GlobalNav"
 import type { UserWithAccessToken } from "system"
 
@@ -52,6 +53,20 @@ const AuthorizedLayout: React.FC<{
 const UnauthorizedLayout: React.FC<{ tokenValid: boolean }> = ({
   tokenValid,
 }) => {
+  // Render one button per provider configured in the next-auth route, so adding
+  // a provider there surfaces a sign-in button automatically — no UI edit.
+  const [providers, setProviders] = useState<
+    Array<{ id: string; name: string }> | null
+  >(null)
+
+  useEffect(() => {
+    getProviders().then((res) => {
+      setProviders(
+        res ? Object.values(res).map((p) => ({ id: p.id, name: p.name })) : []
+      )
+    })
+  }, [])
+
   return (
     <>
       <header>
@@ -60,7 +75,18 @@ const UnauthorizedLayout: React.FC<{ tokenValid: boolean }> = ({
 
       <Box as="main" mx="auto" p={2} py={[2, 4]} textAlign="center">
         {tokenValid === false && <Text my={4}>Please sign in to continue.</Text>}
-        <Button onClick={() => signIn("artsy")}>Log in with Artsy</Button>
+
+        <Stack gap={1} alignItems="center">
+          {providers && providers.length > 0 ? (
+            providers.map((provider) => (
+              <Button key={provider.id} onClick={() => signIn(provider.id)}>
+                Continue with {provider.name}
+              </Button>
+            ))
+          ) : (
+            <Button onClick={() => signIn()}>Sign in</Button>
+          )}
+        </Stack>
       </Box>
     </>
   )
