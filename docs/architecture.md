@@ -33,7 +33,10 @@ Relay/Metaphysics layer.
 - A `Rotation` has `cadenceDays` (7 = weekly, 14 = biweekly) and an `anchorDate`.
   The anchor includes a **handoff hour** — the rotation rolls to the next
   engineer at that time of day. `RotationMember` rows give the ordered on-call
-  list (by `position`).
+  list (by `position`). A `Rotation` also has an optional free-text
+  `description`, and its `timezone` is restricted to `Europe/Berlin`,
+  `Europe/London`, or `America/New_York` (see
+  [`src/rotations/timezones.ts`](../src/rotations/timezones.ts)).
 - The base on-call engineer for an instant is `members[periodIndex mod memberCount]`.
   Period boundaries are computed in the rotation's **timezone** (via `@date-fns/tz`),
   so the handoff stays at the same local wall-clock hour across daylight-saving

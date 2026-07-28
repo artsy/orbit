@@ -1,22 +1,52 @@
 import { Box, Button, Flex, Input, Select, useToasts } from "@artsy/palette"
-import { Form, Formik } from "formik"
+import { TZDate } from "@date-fns/tz"
+import { format, parseISO } from "date-fns"
+import { Form, Formik, useFormikContext } from "formik"
+import { useEffect } from "react"
 import * as Yup from "yup"
-import { Engineer } from "rotations/types"
+import { Engineer, ScheduleEntry } from "rotations/types"
 import { createSwap } from "utils/api/mutations"
 
 export interface SwapFormProps {
   rotationId: string
   engineers: Engineer[]
+  entries: ScheduleEntry[]
+  timezone: string
+  initialValues?: Partial<SwapFormValues>
   onDone?: () => void
   onCancel?: () => void
 }
 
-interface SwapFormValues {
+export interface SwapFormValues {
   engineerAId: string
   dateA: string
   engineerBId: string
   dateB: string
   reason: string
+}
+
+const upcomingShiftsFor = (engineerId: string, entries: ScheduleEntry[]) => {
+  const now = Date.now()
+  return entries
+    .filter(
+      (e) =>
+        e.baseEngineerId === engineerId &&
+        parseISO(e.periodEnd).getTime() > now
+    )
+    .sort(
+      (a, b) =>
+        parseISO(a.periodStart).getTime() - parseISO(b.periodStart).getTime()
+    )
+    .slice(0, 2)
+}
+
+const shiftLabel = (entry: ScheduleEntry, timezone: string) => {
+  const start = new TZDate(parseISO(entry.periodStart).getTime(), timezone)
+  const endInclusive = new TZDate(
+    parseISO(entry.periodEnd).getTime() - 1,
+    timezone
+  )
+  return `${format(start, "MMM d")} – ${format(endInclusive, "MMM d")}`
 }
 
 const validationSchema = Yup.object().shape({
@@ -37,9 +67,132 @@ const validationSchema = Yup.object().shape({
   reason: Yup.string(),
 })
 
+interface SwapFormFieldsProps {
+  engineerOptions: { value: string; text: string }[]
+  entries: ScheduleEntry[]
+  timezone: string
+  onCancel?: () => void
+}
+
+const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
+  engineerOptions,
+  entries,
+  timezone,
+  onCancel,
+}) => {
+  const {
+    values,
+    errors,
+    touched,
+    isSubmitting,
+    handleBlur,
+    handleChange,
+    setFieldValue,
+  } = useFormikContext<SwapFormValues>()
+
+  const optionsA = upcomingShiftsFor(values.engineerAId, entries).map((e) => ({
+    value: e.periodStart,
+    text: shiftLabel(e, timezone),
+  }))
+  const optionsB = upcomingShiftsFor(values.engineerBId, entries).map((e) => ({
+    value: e.periodStart,
+    text: shiftLabel(e, timezone),
+  }))
+
+  useEffect(() => {
+    const isValid = optionsA.some((o) => o.value === values.dateA)
+    if (!values.dateA || !isValid) {
+      setFieldValue("dateA", optionsA[0]?.value ?? "")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.engineerAId])
+
+  useEffect(() => {
+    const isValid = optionsB.some((o) => o.value === values.dateB)
+    if (!values.dateB || !isValid) {
+      setFieldValue("dateB", optionsB[0]?.value ?? "")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.engineerBId])
+
+  return (
+    <Box as={Form} display="flex" flexDirection="column" gap={2}>
+      <Select
+        name="engineerAId"
+        title="Engineer A"
+        options={engineerOptions}
+        selected={values.engineerAId}
+        onSelect={(value) => setFieldValue("engineerAId", value)}
+        onBlur={handleBlur}
+        error={touched.engineerAId && errors.engineerAId}
+      />
+
+      <Select
+        name="dateA"
+        title="Engineer A's shift"
+        options={optionsA}
+        selected={values.dateA}
+        onSelect={(value) => setFieldValue("dateA", value)}
+        onBlur={handleBlur}
+        error={touched.dateA && errors.dateA}
+      />
+
+      <Select
+        name="engineerBId"
+        title="Engineer B"
+        options={engineerOptions}
+        selected={values.engineerBId}
+        onSelect={(value) => setFieldValue("engineerBId", value)}
+        onBlur={handleBlur}
+        error={touched.engineerBId && errors.engineerBId}
+      />
+
+      <Select
+        name="dateB"
+        title="Engineer B's shift"
+        options={optionsB}
+        selected={values.dateB}
+        onSelect={(value) => setFieldValue("dateB", value)}
+        onBlur={handleBlur}
+        error={touched.dateB && errors.dateB}
+      />
+
+      <Input
+        name="reason"
+        title="Reason (optional)"
+        placeholder="Why are these shifts being swapped?"
+        value={values.reason}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        error={touched.reason && errors.reason}
+      />
+
+      <Flex justifyContent="flex-end" gap={1} mt={1}>
+        {onCancel && (
+          <Button
+            type="button"
+            variant="secondaryBlack"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        )}
+
+        <Button type="submit" loading={isSubmitting}>
+          Swap shifts
+        </Button>
+      </Flex>
+    </Box>
+  )
+}
+
 export const SwapForm: React.FC<SwapFormProps> = ({
   rotationId,
   engineers,
+  entries,
+  timezone,
+  initialValues,
   onDone,
   onCancel,
 }) => {
@@ -52,12 +205,14 @@ export const SwapForm: React.FC<SwapFormProps> = ({
 
   return (
     <Formik<SwapFormValues>
+      enableReinitialize
       initialValues={{
         engineerAId: "",
         dateA: "",
         engineerBId: "",
         dateB: "",
         reason: "",
+        ...initialValues,
       }}
       validationSchema={validationSchema}
       onSubmit={async (values, { setSubmitting }) => {
@@ -87,84 +242,12 @@ export const SwapForm: React.FC<SwapFormProps> = ({
         }
       }}
     >
-      {({
-        values,
-        errors,
-        touched,
-        isSubmitting,
-        handleBlur,
-        handleChange,
-        setFieldValue,
-      }) => (
-        <Box as={Form} display="flex" flexDirection="column" gap={2}>
-          <Select
-            name="engineerAId"
-            title="Engineer A"
-            options={engineerOptions}
-            selected={values.engineerAId}
-            onSelect={(value) => setFieldValue("engineerAId", value)}
-            onBlur={handleBlur}
-            error={touched.engineerAId && errors.engineerAId}
-          />
-
-          <Input
-            name="dateA"
-            title="Date within engineer A's shift"
-            type="date"
-            value={values.dateA}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={touched.dateA && errors.dateA}
-          />
-
-          <Select
-            name="engineerBId"
-            title="Engineer B"
-            options={engineerOptions}
-            selected={values.engineerBId}
-            onSelect={(value) => setFieldValue("engineerBId", value)}
-            onBlur={handleBlur}
-            error={touched.engineerBId && errors.engineerBId}
-          />
-
-          <Input
-            name="dateB"
-            title="Date within engineer B's shift"
-            type="date"
-            value={values.dateB}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={touched.dateB && errors.dateB}
-          />
-
-          <Input
-            name="reason"
-            title="Reason (optional)"
-            placeholder="Why are these shifts being swapped?"
-            value={values.reason}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={touched.reason && errors.reason}
-          />
-
-          <Flex justifyContent="flex-end" gap={1} mt={1}>
-            {onCancel && (
-              <Button
-                type="button"
-                variant="secondaryBlack"
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            )}
-
-            <Button type="submit" loading={isSubmitting}>
-              Swap shifts
-            </Button>
-          </Flex>
-        </Box>
-      )}
+      <SwapFormFields
+        engineerOptions={engineerOptions}
+        entries={entries}
+        timezone={timezone}
+        onCancel={onCancel}
+      />
     </Formik>
   )
 }

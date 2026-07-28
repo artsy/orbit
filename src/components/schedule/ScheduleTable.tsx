@@ -3,12 +3,15 @@ import { TZDate } from "@date-fns/tz"
 import { format, parseISO } from "date-fns"
 import { FC } from "react"
 import { Engineer, ScheduleEntry } from "rotations/types"
+import { engineerColor } from "rotations/colors"
 
 interface ScheduleTableProps {
   entries: ScheduleEntry[]
   engineersById: Record<string, Engineer>
   /** Times are displayed in this IANA timezone (the rotation's). */
   timezone: string
+  /** When provided, rows become clickable and invoke this with the clicked entry. */
+  onRowClick?: (entry: ScheduleEntry) => void
 }
 
 const inZone = (iso: string, timezone: string) =>
@@ -32,6 +35,7 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
   entries,
   engineersById,
   timezone,
+  onRowClick,
 }) => {
   const today = new Date()
 
@@ -75,9 +79,10 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
       {entries.map((entry) => {
         const hasOverride = !!entry.override
         const isSwap = hasOverride && !!entry.override?.swapGroupId
-        const showBaseStrikethrough =
+        const showCover =
           hasOverride && entry.baseEngineerId !== entry.effectiveEngineerId
         const highlighted = isCurrentPeriod(entry, today)
+        const clickable = !!onRowClick
 
         return (
           <Flex
@@ -87,6 +92,18 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
             bg={highlighted ? "yellow10" : undefined}
             borderBottom="1px solid"
             borderColor="mono10"
+            onClick={clickable ? () => onRowClick(entry) : undefined}
+            onKeyDown={
+              clickable
+                ? (event) => {
+                    if (event.key === "Enter") onRowClick(entry)
+                  }
+                : undefined
+            }
+            role={clickable ? "button" : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            aria-label={clickable ? "Swap this shift with me" : undefined}
+            style={clickable ? { cursor: "pointer" } : undefined}
           >
             <Box width="25%">
               <Text variant="sm">
@@ -102,10 +119,7 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
             </Box>
 
             <Box width="45%">
-              <Text variant="sm">
-                {engineerName(entry.effectiveEngineerId, engineersById)}
-              </Text>
-              {showBaseStrikethrough && (
+              {showCover && (
                 <Text
                   variant="xs"
                   color="mono60"
@@ -114,6 +128,20 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
                   {engineerName(entry.baseEngineerId, engineersById)}
                 </Text>
               )}
+              <Flex alignItems="center" gap={0.5}>
+                <Box
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    backgroundColor: engineerColor(entry.effectiveEngineerId),
+                  }}
+                />
+                <Text variant="sm">
+                  {engineerName(entry.effectiveEngineerId, engineersById)}
+                </Text>
+              </Flex>
             </Box>
 
             <Box width="30%">

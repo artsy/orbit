@@ -26,6 +26,8 @@ model Engineer {
 model Rotation {
   id          String   @id @default(cuid())
   name        String
+  // Optional free-text description of the rotation's purpose.
+  description String?
   // Length of one on-call period in days (weekly = 7).
   cadenceDays Int      @default(7)
   // Start of period 0. The round-robin is computed relative to this instant.

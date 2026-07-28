@@ -43,6 +43,24 @@ The period containing today tells you who's on call right now.
 ## In the app
 
 The `/rotations/[id]` page renders this data two ways: a **month calendar**
-overview (each on-call period is a colored bar — base rotation, override, or
-swap) that you can page through, and a **schedule list** below it. Times are
-shown in the rotation's timezone.
+overview (each on-call period is a colored bar) that you can page through, and a
+**schedule list** below it. Times are shown in the rotation's timezone. Every
+engineer has a **stable color** used consistently across the calendar bars, the
+schedule-list dots, and the home-page preview, so the same person always reads
+as the same color. On the calendar, an overridden or swapped period keeps the
+covering engineer's color and adds an `(override)` / `(swap)` suffix to the
+label.
+
+Following the Opsgenie / incident.io convention, the schedule list surfaces
+overrides **separately** from who is really on call. Each On-call cell shows the
+engineer actually on call (`effectiveEngineerId`) as the prominent line, with a
+color dot; when an override or swap changed the assignment, the originally
+scheduled engineer (`baseEngineerId`) appears struck-through in gray *above* it.
+A period with no override shows just the single on-call name. Clicking a row
+opens a pre-filled **Swap shifts** dialog suggesting a trade between that shift's
+engineer and you.
+
+The home page (`/`) only lists rotations, each with a compact **"… is on call
+until …"** preview (shown as **"You are on call until …"** when you are the one
+on call). Full schedule details — the calendar and this table — live on the
+rotation's own `/rotations/[id]` page, not on the home page.

@@ -41,6 +41,7 @@ const ROTATION = {
   cadenceDays: 7,
   anchorDate: new Date("2026-01-05T00:00:00.000Z"),
   timezone: "UTC",
+  description: null,
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
 }
 

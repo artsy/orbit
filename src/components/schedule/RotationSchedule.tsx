@@ -1,8 +1,9 @@
 import { Box, Flex, Separator, Spacer, Spinner, Text } from "@artsy/palette"
-import { addDays, formatISO } from "date-fns"
+import { addDays, formatISO, parseISO } from "date-fns"
+import { useSession } from "next-auth/react"
 import dynamic from "next/dynamic"
-import { FC, useMemo } from "react"
-import { Engineer } from "rotations/types"
+import { FC, useMemo, useState } from "react"
+import { Engineer, ScheduleEntry } from "rotations/types"
 import {
   useEngineers,
   useMembers,
@@ -10,7 +11,12 @@ import {
   useRotation,
   useSchedule,
 } from "utils/hooks/useApi"
-import { CreateOverrideButton, CreateSwapButton } from "components/overrides"
+import {
+  CreateOverrideButton,
+  CreateSwapButton,
+  SwapModal,
+} from "components/overrides"
+import { SwapFormValues } from "components/overrides/SwapForm"
 import { OverridesList } from "components/overrides/OverridesList"
 import { MembersEditor } from "components/members/MembersEditor"
 import { ScheduleTable } from "./ScheduleTable"
@@ -35,6 +41,23 @@ interface RotationScheduleProps {
 const PERIODS_AHEAD = 8
 const DEFAULT_CADENCE_DAYS = 7
 
+const findMyNextShift = (
+  entries: ScheduleEntry[],
+  engineerId: string
+): ScheduleEntry | undefined => {
+  const now = Date.now()
+  return entries
+    .filter(
+      (entry) =>
+        entry.baseEngineerId === engineerId &&
+        parseISO(entry.periodEnd).getTime() > now
+    )
+    .sort(
+      (a, b) =>
+        parseISO(a.periodStart).getTime() - parseISO(b.periodStart).getTime()
+    )[0]
+}
+
 export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const {
     data: rotation,
@@ -43,6 +66,12 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   } = useRotation(rotationId)
   const { error: membersError, mutate: mutateMembers } = useMembers(rotationId)
   const { data: engineers, error: engineersError } = useEngineers()
+  const session = useSession()
+  const myEmail = session.data?.user?.email
+  const [swapPrefill, setSwapPrefill] = useState<
+    Partial<SwapFormValues> | undefined
+  >(undefined)
+  const [swapOpen, setSwapOpen] = useState(false)
 
   const cadenceDays = rotation?.cadenceDays ?? DEFAULT_CADENCE_DAYS
 
@@ -71,6 +100,10 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     })
     return map
   }, [engineers])
+
+  const myEngineer = (engineers ?? []).find(
+    (e) => e.email?.toLowerCase() === myEmail?.toLowerCase()
+  )
 
   if (!rotationId) {
     return (
@@ -114,9 +147,25 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     mutateMembers()
   }
 
+  const handleRowClick = (entry: ScheduleEntry) => {
+    const myNext = myEngineer ? findMyNextShift(entries, myEngineer.id) : undefined
+    setSwapPrefill({
+      engineerAId: entry.baseEngineerId ?? "",
+      dateA: entry.periodStart,
+      engineerBId: myEngineer?.id ?? "",
+      dateB: myNext?.periodStart ?? "",
+    })
+    setSwapOpen(true)
+  }
+
   return (
     <Box>
       <Text variant="lg-display">{rotation.name}</Text>
+      {rotation.description && (
+        <Text variant="sm" mt={0.5}>
+          {rotation.description}
+        </Text>
+      )}
       <Text variant="sm" color="mono60" mt={0.5}>
         {currentEngineer
           ? `Currently on-call: ${currentEngineer.name}`
@@ -125,8 +174,25 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
 
       <Flex gap={1} my={2}>
         <CreateOverrideButton rotationId={rotationId} onDone={handleDone} />
-        <CreateSwapButton rotationId={rotationId} onDone={handleDone} />
+        <CreateSwapButton
+          rotationId={rotationId}
+          engineers={engineers ?? []}
+          entries={entries}
+          timezone={rotation.timezone}
+          onDone={handleDone}
+        />
       </Flex>
+
+      <SwapModal
+        rotationId={rotationId}
+        engineers={engineers ?? []}
+        entries={entries}
+        timezone={rotation.timezone}
+        isOpen={swapOpen}
+        onClose={() => setSwapOpen(false)}
+        onDone={handleDone}
+        initialValues={swapPrefill}
+      />
 
       <RotationCalendar
         rotationId={rotationId}
@@ -142,6 +208,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         entries={entries}
         engineersById={engineersById}
         timezone={rotation.timezone}
+        onRowClick={handleRowClick}
       />
 
       <Spacer y={4} />

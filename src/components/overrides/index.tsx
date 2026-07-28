@@ -1,8 +1,8 @@
 import { Button, ModalDialog } from "@artsy/palette"
 import { useEffect, useState } from "react"
-import { Engineer } from "rotations/types"
+import { Engineer, ScheduleEntry } from "rotations/types"
 import { OverrideForm } from "./OverrideForm"
-import { SwapForm } from "./SwapForm"
+import { SwapForm, SwapFormValues } from "./SwapForm"
 
 /** Loads active + inactive engineers for use in the override/swap Selects. */
 function useEngineers(): Engineer[] {
@@ -65,17 +65,65 @@ export const CreateOverrideButton: React.FC<CreateOverrideButtonProps> = ({
   )
 }
 
+export interface SwapModalProps {
+  rotationId: string
+  engineers: Engineer[]
+  entries: ScheduleEntry[]
+  timezone: string
+  isOpen: boolean
+  onClose: () => void
+  onDone?: () => void
+  initialValues?: Partial<SwapFormValues>
+}
+
+export const SwapModal: React.FC<SwapModalProps> = ({
+  rotationId,
+  engineers,
+  entries,
+  timezone,
+  isOpen,
+  onClose,
+  onDone,
+  initialValues,
+}) => {
+  if (!isOpen) return null
+
+  return (
+    <ModalDialog title="Swap shifts" onClose={onClose} width={["100%", 500]}>
+      <SwapForm
+        rotationId={rotationId}
+        engineers={engineers}
+        entries={entries}
+        timezone={timezone}
+        initialValues={initialValues}
+        onCancel={onClose}
+        onDone={() => {
+          onClose()
+          onDone?.()
+        }}
+      />
+    </ModalDialog>
+  )
+}
+
 export interface CreateSwapButtonProps {
   rotationId: string
+  engineers?: Engineer[]
+  entries: ScheduleEntry[]
+  timezone: string
   onDone?: () => void
 }
 
 export const CreateSwapButton: React.FC<CreateSwapButtonProps> = ({
   rotationId,
+  engineers,
+  entries,
+  timezone,
   onDone,
 }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const engineers = useEngineers()
+  const fetchedEngineers = useEngineers()
+  const resolvedEngineers = engineers ?? fetchedEngineers
 
   return (
     <>
@@ -83,23 +131,15 @@ export const CreateSwapButton: React.FC<CreateSwapButtonProps> = ({
         Swap shifts
       </Button>
 
-      {isOpen && (
-        <ModalDialog
-          title="Swap shifts"
-          onClose={() => setIsOpen(false)}
-          width={["100%", 500]}
-        >
-          <SwapForm
-            rotationId={rotationId}
-            engineers={engineers}
-            onCancel={() => setIsOpen(false)}
-            onDone={() => {
-              setIsOpen(false)
-              onDone?.()
-            }}
-          />
-        </ModalDialog>
-      )}
+      <SwapModal
+        rotationId={rotationId}
+        engineers={resolvedEngineers}
+        entries={entries}
+        timezone={timezone}
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onDone={onDone}
+      />
     </>
   )
 }

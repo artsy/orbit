@@ -34,6 +34,13 @@ on missing resource `404 { error }`.
 | PATCH | `/api/rotations/[id]` | `UpdateRotationBody` | `Rotation` |
 | DELETE | `/api/rotations/[id]` | — | `Rotation` |
 
+A `Rotation` includes an optional `description` (string, nullable) — free-text
+notes on the rotation's purpose. Both `CreateRotationBody` and
+`UpdateRotationBody` accept an optional `description`.
+
+`timezone` (on create and update) must be one of `Europe/Berlin`,
+`Europe/London`, or `America/New_York`; any other value returns `400`.
+
 ## Membership — domain `rotations`
 
 | Method | Route | Body | Response |
