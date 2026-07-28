@@ -198,11 +198,15 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         rotationId={rotationId}
         timezone={rotation.timezone}
         engineersById={engineersById}
+        onSwapRequest={handleRowClick}
       />
 
       <Spacer y={4} />
 
       <Text variant="md">Schedule list</Text>
+      <Text variant="xs" color="mono60">
+        Tap on a row to swap
+      </Text>
       <Spacer y={1} />
       <ScheduleTable
         entries={entries}

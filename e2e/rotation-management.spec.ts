@@ -224,4 +224,45 @@ test.describe("rotation management", () => {
       "2027-01-11T00:00:00.000Z"
     )
   })
+
+  test("tapping the on-call bar in the calendar opens the same swap", async ({
+    page,
+  }) => {
+    // Use a period inside the current month so it is visible in the calendar's
+    // default (current-month) view, regardless of when the suite runs.
+    const now = new Date()
+    const y = now.getUTCFullYear()
+    const m = now.getUTCMonth()
+    const periodStart = new Date(Date.UTC(y, m, 2)).toISOString()
+    const periodEnd = new Date(Date.UTC(y, m, 9)).toISOString()
+
+    await mockRotationPage(page, {
+      members: [memberFor("e1", 0), memberFor("e3", 1)],
+      entries: [
+        {
+          periodIndex: 0,
+          periodStart,
+          periodEnd,
+          baseEngineerId: "e1",
+          effectiveEngineerId: "e1",
+          override: null,
+        },
+      ],
+    })
+
+    await page.goto("/rotations/rot-1")
+
+    // Click Ada's on-call bar within the calendar (scope to `.fc` so we don't
+    // match the schedule table or member list, which also render her name).
+    const calendar = page.locator(".fc")
+    await expect(calendar).toBeVisible()
+    await calendar.getByText("Ada Lovelace").first().click()
+
+    // The same pre-filled Swap dialog opens: engineer A = the clicked bar's
+    // engineer (Ada / e1), engineer B = the signed-in test user (e3).
+    const modal = page.getByRole("dialog").filter({ hasText: "Swap shifts" })
+    await expect(modal).toBeVisible()
+    await expect(modal.locator('select[name="engineerAId"]')).toHaveValue("e1")
+    await expect(modal.locator('select[name="engineerBId"]')).toHaveValue("e3")
+  })
 })
