@@ -34,8 +34,8 @@ export default async function handler(
         data: {
           ...(body.name !== undefined ? { name: body.name } : {}),
           ...(body.email !== undefined ? { email: body.email } : {}),
-          ...(body.slackUsername !== undefined
-            ? { slackUsername: body.slackUsername }
+          ...(body.slackUserId !== undefined
+            ? { slackUserId: body.slackUserId }
             : {}),
           ...(body.active !== undefined ? { active: body.active } : {}),
         },

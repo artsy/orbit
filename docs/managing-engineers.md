@@ -20,7 +20,7 @@ way to get one is to sign in through the app in your browser.
 ## Add an engineer
 
 **In the UI:** go to **`/engineers`**, enter the person's name, email, and
-(optionally) their Slack username, and submit.
+(optionally) their Slack user ID, and submit.
 
 **Via the API:**
 
@@ -31,11 +31,13 @@ curl -X POST http://localhost:3000/api/engineers \
   -d '{
     "name": "Ada Lovelace",
     "email": "ada@artsymail.com",
-    "slackUsername": "@ada"
+    "slackUserId": "U01427GSPK9"
   }'
 ```
 
-`slackUsername` is optional and can be updated later via `PATCH /api/engineers/[id]`.
+`slackUserId` (the Slack **user ID**, used by Slack bots to `@mention` the
+engineer — stable even if they change their handle) is optional and can be
+updated later via `PATCH /api/engineers/[id]`.
 
 ## Delete an engineer
 

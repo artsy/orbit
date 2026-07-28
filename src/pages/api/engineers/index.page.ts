@@ -40,7 +40,7 @@ export default async function handler(
         data: {
           name: body.name,
           email: body.email,
-          slackUsername: body.slackUsername ?? null,
+          slackUserId: body.slackUserId ?? null,
           active: body.active ?? true,
         },
       })

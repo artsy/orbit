@@ -17,7 +17,8 @@ export interface Engineer {
   id: string
   name: string
   email: string
-  slackUsername: string | null
+  /** Slack user ID (e.g. "U01427GSPK9") for @mentions — stable across renames. */
+  slackUserId: string | null
   active: boolean
   createdAt: string
 }
@@ -93,7 +94,7 @@ export interface ScheduleResponse {
 export interface CreateEngineerBody {
   name: string
   email: string
-  slackUsername?: string | null
+  slackUserId?: string | null
   active?: boolean
 }
 

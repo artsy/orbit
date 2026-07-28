@@ -51,7 +51,7 @@ title: Getting started
 
    ```sh
    yarn prisma:migrate   # applies migrations
-   yarn seed             # 5 engineers, a weekly rotation, a demo override + swap
+   yarn seed             # engineers + a weekly "Platform on-call" rotation (with a demo override + swap) and a biweekly "Release Captain" rotation
    ```
 
 5. **Run the app**

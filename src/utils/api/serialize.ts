@@ -21,7 +21,7 @@ export function serializeEngineer(engineer: PrismaEngineer): Engineer {
     id: engineer.id,
     name: engineer.name,
     email: engineer.email,
-    slackUsername: engineer.slackUsername,
+    slackUserId: engineer.slackUserId,
     active: engineer.active,
     createdAt: engineer.createdAt.toISOString(),
   }
