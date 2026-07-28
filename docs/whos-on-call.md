@@ -40,6 +40,21 @@ the period was changed:
 
 The period containing today tells you who's on call right now.
 
+## Just the current + next on-call
+
+If you only need who's on call **now and next** (e.g. a Slack bot), use the
+convenience endpoint instead of computing it from the schedule:
+
+```sh
+curl "http://localhost:3000/api/rotations/<rotationId>/on-call" \
+  -H "Cookie: <your-session-cookie>"
+```
+
+It returns `{ current, next }`, each `{ engineer, periodStart, periodEnd }`
+(or `null`) with overrides/swaps already applied — so `current.engineer` is who
+to page right now, and `current.engineer.slackUserId` is what a Slack bot needs
+to `@mention` them.
+
 ## In the app
 
 The `/rotations/[id]` page renders this data two ways: a **calendar** overview
