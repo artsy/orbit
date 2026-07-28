@@ -63,6 +63,10 @@ A period with no override shows just the single on-call name. Clicking a row
 opens a pre-filled **Swap shifts** dialog suggesting a trade between that shift's
 engineer and you.
 
+You can edit a rotation's settings — name, description, cadence, handoff time,
+and timezone — via the **Edit rotation** button on its page, or the **Edit**
+button on its card on the home page (both save via `PATCH /api/rotations/[id]`).
+
 The home page (`/`) lists rotations as **cards**, each showing the rotation's
 cadence as a caption (e.g. **Weekly rotation**, **Biweekly rotation**, or
 **Every N days rotation**) plus a compact **"… is on call until …"** preview

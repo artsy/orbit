@@ -118,6 +118,37 @@ test.describe("rotation management", () => {
     ).toBeVisible()
   })
 
+  test("edits a rotation from the rotation page", async ({ page }) => {
+    await mockRotationPage(page, { members: [] })
+
+    let patched: any = null
+    // Registered after mockRotationPage so it wins for this exact path; handles
+    // both the GET (page load) and the PATCH (save).
+    await page.route("**/api/rotations/rot-1", async (route) => {
+      if (route.request().method() === "PATCH") {
+        patched = route.request().postDataJSON()
+        return route.fulfill({ json: { ...rotation, name: patched.name } })
+      }
+      return route.fulfill({ json: rotation })
+    })
+
+    await page.goto("/rotations/rot-1")
+
+    await page.getByRole("button", { name: "Edit rotation" }).click()
+
+    const modal = page.getByRole("dialog").filter({ hasText: "Edit rotation" })
+    await expect(modal).toBeVisible()
+    await expect(modal.locator('input[name="name"]')).toHaveValue(
+      "Platform on-call"
+    )
+
+    await modal.locator('input[name="name"]').fill("Platform & Infra")
+    await modal.getByRole("button", { name: "Save changes" }).click()
+
+    await expect(modal).not.toBeVisible()
+    expect(patched?.name).toBe("Platform & Infra")
+  })
+
   test("renders the on-call calendar", async ({ page }) => {
     await mockRotationPage(page, { members: [memberFor("e1", 0)] })
 

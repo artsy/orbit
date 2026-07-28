@@ -98,6 +98,30 @@ test.describe("home", () => {
     )
   })
 
+  test("opens the edit modal from a rotation card", async ({ page }) => {
+    const rotA = rotation("rot-1", "Platform on-call")
+
+    await page.route("**/api/rotations", (route) =>
+      route.fulfill({ json: [rotA] })
+    )
+    await page.route("**/api/engineers", (route) =>
+      route.fulfill({ json: engineers })
+    )
+    await page.route("**/api/rotations/rot-1/schedule**", (route) =>
+      route.fulfill({ json: alwaysOnCall(rotA, "e1") })
+    )
+
+    await page.goto("/")
+
+    await page.getByRole("button", { name: "Edit" }).first().click()
+
+    const modal = page.getByRole("dialog").filter({ hasText: "Edit rotation" })
+    await expect(modal).toBeVisible()
+    await expect(modal.locator('input[name="name"]')).toHaveValue(
+      "Platform on-call"
+    )
+  })
+
   test("does not render inline schedule details, even with a single rotation", async ({
     page,
   }) => {

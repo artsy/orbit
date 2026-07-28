@@ -23,6 +23,7 @@ import {
   useSchedule,
 } from "utils/hooks/useApi"
 import { deleteOverride } from "utils/api/mutations"
+import { EditRotationModal } from "components/rotations/EditRotationModal"
 import {
   CreateOverrideButton,
   CreateSwapButton,
@@ -76,6 +77,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     data: rotation,
     error: rotationError,
     isLoading: rotationLoading,
+    mutate: mutateRotation,
   } = useRotation(rotationId)
   const { error: membersError, mutate: mutateMembers } = useMembers(rotationId)
   const { data: engineers, error: engineersError } = useEngineers()
@@ -95,6 +97,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     replaceIds: string[]
   } | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const cadenceDays = rotation?.cadenceDays ?? DEFAULT_CADENCE_DAYS
 
@@ -271,7 +274,21 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
           timezone={rotation.timezone}
           onDone={handleDone}
         />
+        <Button variant="secondaryBlack" onClick={() => setEditOpen(true)}>
+          Edit rotation
+        </Button>
       </Flex>
+
+      <EditRotationModal
+        rotation={rotation}
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        onDone={() => {
+          mutateRotation()
+          handleDone()
+          globalMutate("/api/rotations")
+        }}
+      />
 
       <SwapModal
         rotationId={rotationId}

@@ -16,6 +16,7 @@ import {
   SetMembersBody,
   UpdateEngineerBody,
   UpdateOverrideBody,
+  UpdateRotationBody,
 } from "rotations/types"
 
 async function request<T>(
@@ -78,6 +79,16 @@ export async function createRotation(
 ): Promise<Rotation> {
   return request<Rotation>("/api/rotations", {
     method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export async function updateRotation(
+  id: string,
+  body: UpdateRotationBody
+): Promise<Rotation> {
+  return request<Rotation>(`/api/rotations/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(body),
   })
 }
