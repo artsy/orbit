@@ -290,6 +290,11 @@ test.describe("rotation management", () => {
     await expect(modal.locator('select[name="dateA"]')).toHaveValue(
       "2027-02-01T00:00:00.000Z"
     )
+    await expect(
+      modal.locator(
+        'select[name="dateA"] option[value="2027-02-01T00:00:00.000Z"]'
+      )
+    ).toHaveCount(1)
   })
 
   test("tapping the on-call bar in the calendar opens the same swap", async ({

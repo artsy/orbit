@@ -114,12 +114,30 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
     setFieldValue(dateField, nearest?.periodStart ?? "")
   }
 
+  const engineerSelectOptions = [
+    { value: "", text: "Choose an engineer" },
+    ...engineerOptions,
+  ]
+
+  const shiftSelectOptions = (
+    opts: { value: string; text: string }[],
+    engineerId: string
+  ) =>
+    opts.length
+      ? opts
+      : [
+          {
+            value: "",
+            text: engineerId ? "No upcoming shifts" : "Choose an engineer first",
+          },
+        ]
+
   return (
     <Box as={Form} display="flex" flexDirection="column" gap={2}>
       <Select
         name="engineerAId"
         title="Engineer A"
-        options={engineerOptions}
+        options={engineerSelectOptions}
         selected={values.engineerAId}
         onSelect={(value) => selectEngineer("engineerAId", value)}
         onBlur={handleBlur}
@@ -127,9 +145,10 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
       />
 
       <Select
+        key={`dateA-${values.engineerAId}`}
         name="dateA"
         title="Engineer A's shift"
-        options={optionsA}
+        options={shiftSelectOptions(optionsA, values.engineerAId)}
         selected={values.dateA}
         onSelect={(value) => setFieldValue("dateA", value)}
         onBlur={handleBlur}
@@ -139,7 +158,7 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
       <Select
         name="engineerBId"
         title="Engineer B"
-        options={engineerOptions}
+        options={engineerSelectOptions}
         selected={values.engineerBId}
         onSelect={(value) => selectEngineer("engineerBId", value)}
         onBlur={handleBlur}
@@ -147,9 +166,10 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
       />
 
       <Select
+        key={`dateB-${values.engineerBId}`}
         name="dateB"
         title="Engineer B's shift"
-        options={optionsB}
+        options={shiftSelectOptions(optionsB, values.engineerBId)}
         selected={values.dateB}
         onSelect={(value) => setFieldValue("dateB", value)}
         onBlur={handleBlur}

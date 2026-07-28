@@ -4,7 +4,10 @@ import { BASE_URL, NEXTAUTH_SECRET } from "./e2e/constants"
 export default defineConfig({
   testDir: "./e2e",
   globalSetup: "./e2e/global-setup.ts",
-  timeout: 30_000,
+  // Generous per-test timeout: the Next dev server compiles heavy pages (the
+  // FullCalendar rotation view) on first hit, which can exceed 30s when several
+  // workers warm cold routes at once.
+  timeout: 60_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -13,6 +16,7 @@ export default defineConfig({
     baseURL: BASE_URL,
     storageState: "e2e/.auth/state.json",
     trace: "on-first-retry",
+    navigationTimeout: 45_000,
   },
   projects: [
     {

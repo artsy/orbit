@@ -67,7 +67,8 @@ title: Getting started
    check.)
 
    Open <http://localhost:3000> and sign in with Artsy. Only users with the
-   Gravity `team` role can sign in and make changes.
+   Gravity `team` role can sign in and make changes. You can sign out anytime
+   via the "Log out" button in the top navigation.
 
 ## Environment variables
 
