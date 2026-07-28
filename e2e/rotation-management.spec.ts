@@ -249,6 +249,49 @@ test.describe("rotation management", () => {
     )
   })
 
+  test("selecting an engineer in the swap form populates their shifts immediately", async ({
+    page,
+  }) => {
+    const entries = [
+      {
+        periodIndex: 0,
+        periodStart: "2027-02-01T00:00:00.000Z",
+        periodEnd: "2027-02-08T00:00:00.000Z",
+        baseEngineerId: "e1",
+        effectiveEngineerId: "e1",
+        override: null,
+      },
+      {
+        periodIndex: 1,
+        periodStart: "2027-02-08T00:00:00.000Z",
+        periodEnd: "2027-02-15T00:00:00.000Z",
+        baseEngineerId: "e2",
+        effectiveEngineerId: "e2",
+        override: null,
+      },
+    ]
+
+    await mockRotationPage(page, {
+      members: [memberFor("e1", 0), memberFor("e2", 1)],
+      entries,
+    })
+
+    await page.goto("/rotations/rot-1")
+
+    // Open the manual swap modal (no prefill).
+    await page.getByRole("button", { name: "Swap shifts" }).click()
+    const modal = page.getByRole("dialog").filter({ hasText: "Swap shifts" })
+    await expect(modal).toBeVisible()
+
+    // Selecting engineer A the FIRST time should immediately populate the shift
+    // dropdown with that engineer's nearest upcoming shift (regression: it used
+    // to stay empty until you switched engineers and back).
+    await modal.locator('select[name="engineerAId"]').selectOption("e1")
+    await expect(modal.locator('select[name="dateA"]')).toHaveValue(
+      "2027-02-01T00:00:00.000Z"
+    )
+  })
+
   test("tapping the on-call bar in the calendar opens the same swap", async ({
     page,
   }) => {

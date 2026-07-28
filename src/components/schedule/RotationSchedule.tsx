@@ -1,5 +1,6 @@
 import { Box, Flex, Separator, Spacer, Spinner, Text } from "@artsy/palette"
 import { addDays, formatISO, parseISO } from "date-fns"
+import { useSWRConfig } from "swr"
 import { useSession } from "next-auth/react"
 import dynamic from "next/dynamic"
 import { FC, useMemo, useState } from "react"
@@ -66,6 +67,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   } = useRotation(rotationId)
   const { error: membersError, mutate: mutateMembers } = useMembers(rotationId)
   const { data: engineers, error: engineersError } = useEngineers()
+  const { mutate: globalMutate } = useSWRConfig()
   const session = useSession()
   const myEmail = session.data?.user?.email
   const [swapPrefill, setSwapPrefill] = useState<
@@ -89,7 +91,6 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     data: schedule,
     error: scheduleError,
     isLoading: scheduleLoading,
-    mutate: mutateSchedule,
   } = useSchedule(rotationId, start, end)
   const { mutate: mutateOverrides } = useOverrides(rotationId)
 
@@ -142,9 +143,16 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     : undefined
 
   const handleDone = () => {
-    mutateSchedule()
     mutateOverrides()
     mutateMembers()
+    // Revalidate every schedule window for this rotation — the list and the
+    // calendar use different SWR keys (different date ranges), so a single
+    // mutateSchedule() would miss the calendar's view.
+    globalMutate(
+      (key) =>
+        typeof key === "string" &&
+        key.startsWith(`/api/rotations/${rotationId}/schedule`)
+    )
   }
 
   const handleRowClick = (entry: ScheduleEntry) => {
