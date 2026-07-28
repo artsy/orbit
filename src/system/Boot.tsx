@@ -1,6 +1,7 @@
-import { Theme, ToastsProvider, injectGlobalStyles } from "@artsy/palette"
+import { ToastsProvider, injectGlobalStyles } from "@artsy/palette"
 import { SessionProvider } from "next-auth/react"
 import type { Session } from "next-auth"
+import { ThemeModeProvider } from "system/ThemeMode"
 
 const { GlobalStyles } = injectGlobalStyles(`
   /* overrides and additions */
@@ -14,10 +15,10 @@ interface BootProps {
 export const Boot: React.FC<BootProps> = ({ children, session }) => {
   return (
     <SessionProvider session={session}>
-      <Theme>
+      <ThemeModeProvider>
         <GlobalStyles />
         <ToastsProvider>{children}</ToastsProvider>
-      </Theme>
+      </ThemeModeProvider>
     </SessionProvider>
   )
 }

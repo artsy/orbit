@@ -127,6 +127,11 @@ test.describe("rotation management", () => {
     // should appear.
     await expect(page.locator(".fc")).toBeVisible()
     await expect(page.locator(".fc-toolbar-title")).toBeVisible()
+
+    // Weekend columns are present and shaded (weekend-shading CSS targets
+    // these FullCalendar-provided classes).
+    await expect(page.locator(".fc-day-sat").first()).toBeVisible()
+    await expect(page.locator(".fc-day-sun").first()).toBeVisible()
   })
 
   test("switches between the 2 weeks and Month calendar views", async ({
