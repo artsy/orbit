@@ -82,6 +82,20 @@ curl -X DELETE http://localhost:3000/api/overrides/<overrideId> \
 
 To undo a swap, delete both overrides that share its `swapGroupId`.
 
+## Modify or delete from the calendar
+
+Tapping the on-call bar of an **overridden or swapped** period in the calendar
+opens an actions dialog:
+
+- **Modify** — opens the change pre-filled: a plain override opens the override
+  form (which saves via `PATCH /api/overrides/[id]`); a swap opens the swap form
+  pre-filled, and saving replaces the swap's two overrides with a fresh pair.
+- **Delete** — removes the override, or, for a swap, both overrides in the
+  group.
+
+(Tapping the bar of a normal, unchanged period still opens the "swap with me"
+suggestion instead.)
+
 ## Viewing the result
 
 The schedule table on `/rotations/<rotationId>` marks any changed period with an

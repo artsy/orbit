@@ -64,7 +64,11 @@ compute `entries`.
 |---|---|---|---|
 | GET | `/api/rotations/[id]/overrides` | — | `Override[]` |
 | POST | `/api/rotations/[id]/overrides` | `CreateOverrideBody` | `Override` (201) |
+| PATCH | `/api/overrides/[id]` | `UpdateOverrideBody` | `Override` |
 | DELETE | `/api/overrides/[id]` | — | `Override` |
+
+`UpdateOverrideBody` accepts any of `startDate`, `endDate`,
+`replacementEngineerId`, `reason` — only the provided fields change.
 
 ## Swaps — domain `overrides`
 

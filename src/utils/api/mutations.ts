@@ -15,6 +15,7 @@ import {
   RotationMember,
   SetMembersBody,
   UpdateEngineerBody,
+  UpdateOverrideBody,
 } from "rotations/types"
 
 async function request<T>(
@@ -97,6 +98,16 @@ export async function createOverride(
 ): Promise<Override> {
   return request<Override>(`/api/rotations/${rotationId}/overrides`, {
     method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export async function updateOverride(
+  id: string,
+  body: UpdateOverrideBody
+): Promise<Override> {
+  return request<Override>(`/api/overrides/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(body),
   })
 }

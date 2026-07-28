@@ -61,8 +61,10 @@ interface RotationCalendarProps {
   rotationId: string
   timezone: string
   engineersById: Record<string, Engineer>
-  /** Tapping the on-call (main person) bar requests a swap for that period. */
+  /** Tapping the on-call (main person) bar of a normal period requests a swap. */
   onSwapRequest?: (entry: ScheduleEntry) => void
+  /** Tapping the on-call bar of an overridden/swapped period requests actions. */
+  onOverrideAction?: (entry: ScheduleEntry) => void
 }
 
 // Calendar date (YYYY-MM-DD) of an instant, in the rotation's timezone.
@@ -74,6 +76,7 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
   timezone,
   engineersById,
   onSwapRequest,
+  onOverrideAction,
 }) => {
   // FullCalendar reports the visible window via datesSet; we fetch the schedule
   // for exactly that range.
@@ -129,14 +132,14 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
           color: engineerColor(entry.effectiveEngineerId),
           label: isSwap ? "swap" : isOverride ? "override" : null,
           sortKey: 1,
-          clickable: !!onSwapRequest,
+          clickable: !!(onSwapRequest || onOverrideAction),
           entry,
         },
       })
     })
 
     return result
-  }, [schedule, engineersById, timezone, onSwapRequest])
+  }, [schedule, engineersById, timezone, onSwapRequest, onOverrideAction])
 
   return (
     <Box>
@@ -169,7 +172,12 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
         eventClick={(arg) => {
           const props = arg.event.extendedProps
           if (props.kind === "effective" && props.entry) {
-            onSwapRequest?.(props.entry as ScheduleEntry)
+            const entry = props.entry as ScheduleEntry
+            if (entry.override) {
+              onOverrideAction?.(entry)
+            } else {
+              onSwapRequest?.(entry)
+            }
           }
         }}
         eventDisplay="block"

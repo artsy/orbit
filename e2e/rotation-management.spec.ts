@@ -332,4 +332,81 @@ test.describe("rotation management", () => {
     await expect(modal.locator('select[name="engineerAId"]')).toHaveValue("e1")
     await expect(modal.locator('select[name="engineerBId"]')).toHaveValue("e3")
   })
+
+  const currentMonthOverride = () => {
+    const now = new Date()
+    const y = now.getUTCFullYear()
+    const m = now.getUTCMonth()
+    const periodStart = new Date(Date.UTC(y, m, 2)).toISOString()
+    const periodEnd = new Date(Date.UTC(y, m, 9)).toISOString()
+    const override = {
+      id: "ov-1",
+      rotationId: "rot-1",
+      startDate: periodStart,
+      endDate: new Date(Date.UTC(y, m, 8)).toISOString(),
+      replacementEngineerId: "e2",
+      originalEngineerId: "e1",
+      reason: "conference",
+      createdByEmail: "ada@artsymail.com",
+      swapGroupId: null,
+      createdAt: "2020-01-01T00:00:00.000Z",
+    }
+    const entry = {
+      periodIndex: 0,
+      periodStart,
+      periodEnd,
+      baseEngineerId: "e1",
+      effectiveEngineerId: "e2",
+      override,
+    }
+    return { override, entry }
+  }
+
+  test("tapping an override in the calendar can delete it", async ({ page }) => {
+    const { override, entry } = currentMonthOverride()
+    await mockRotationPage(page, {
+      members: [memberFor("e1", 0), memberFor("e2", 1)],
+      overrides: [override],
+      entries: [entry],
+    })
+
+    await page.goto("/rotations/rot-1")
+    await expect(page.getByText("Covered by Grace Hopper")).toBeVisible()
+
+    // Tap the covering engineer's bar in the calendar → actions dialog.
+    await page.locator(".fc").getByText("Grace Hopper").first().click()
+    const dialog = page.getByRole("dialog").filter({ hasText: "is covering" })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "Modify" })).toBeVisible()
+
+    await dialog.getByRole("button", { name: "Delete" }).click()
+    await expect(page.getByText("No active overrides")).toBeVisible()
+  })
+
+  test("tapping an override in the calendar can modify it (prefilled form)", async ({
+    page,
+  }) => {
+    const { override, entry } = currentMonthOverride()
+    await mockRotationPage(page, {
+      members: [memberFor("e1", 0), memberFor("e2", 1)],
+      overrides: [override],
+      entries: [entry],
+    })
+
+    await page.goto("/rotations/rot-1")
+
+    await page.locator(".fc").getByText("Grace Hopper").first().click()
+    const dialog = page.getByRole("dialog").filter({ hasText: "is covering" })
+    await dialog.getByRole("button", { name: "Modify" }).click()
+
+    // The prefilled edit form opens with the override's replacement engineer.
+    const editModal = page.getByRole("dialog").filter({ hasText: "Edit override" })
+    await expect(editModal).toBeVisible()
+    await expect(
+      editModal.locator('select[name="replacementEngineerId"]')
+    ).toHaveValue("e2")
+    await expect(
+      editModal.getByRole("button", { name: "Save changes" })
+    ).toBeVisible()
+  })
 })
