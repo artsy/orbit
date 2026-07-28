@@ -48,8 +48,9 @@ overview (each on-call period is a colored bar) that you can page through, and a
 engineer has a **stable color** used consistently across the calendar bars, the
 schedule-list dots, and the home-page preview, so the same person always reads
 as the same color. On the calendar, an overridden or swapped period keeps the
-covering engineer's color and adds an `(override)` / `(swap)` suffix to the
-label.
+covering engineer's color with an `(override)` / `(swap)` suffix, and stacks a
+separate muted, struck-through bar for the originally scheduled engineer **above**
+it — so overrides read separately from who is really on call.
 
 Following the Opsgenie / incident.io convention, the schedule list surfaces
 overrides **separately** from who is really on call. Each On-call cell shows the
