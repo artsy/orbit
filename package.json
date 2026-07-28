@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "yarn@4.17.1",
   "scripts": {
+    "setup:artsy": "scripts/setup.sh",
     "dev": "node scripts/check-migrations.mjs && next dev",
     "dev:next": "next dev",
     "build": "next build",
