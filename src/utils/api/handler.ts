@@ -6,6 +6,7 @@ import type { NextApiRequest, NextApiResponse } from "next"
 
 import { Action, assertPermitted, Domain, UserWithAccessToken } from "system"
 import { getSessionUser } from "utils/auth"
+import { getServiceUser } from "utils/serviceAuth"
 
 export function sendError(
   res: NextApiResponse,
@@ -24,6 +25,11 @@ export async function requireUser(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<UserWithAccessToken | undefined> {
+  // A valid service token authenticates a read-only machine principal; fall
+  // back to the interactive session otherwise.
+  const serviceUser = getServiceUser(req)
+  if (serviceUser) return serviceUser
+
   const user = await getSessionUser(req, res)
   if (!user) {
     sendError(res, 401, "Unauthorized")

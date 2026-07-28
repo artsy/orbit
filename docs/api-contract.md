@@ -89,3 +89,18 @@ transaction.
 | Method | Route | Response |
 |---|---|---|
 | GET | `/api/status` | `{ status: "OK" }` |
+
+## Authentication
+
+Most endpoints require an authenticated caller. There are two ways to
+authenticate:
+
+1. **Interactive session** (people): Artsy/Gravity OAuth via next-auth. Reads
+   and writes require the Gravity `team` role.
+2. **Service token** (machines): a request with `Authorization: Bearer <token>`
+   whose token matches one configured in the `ORBIT_SERVICE_TOKENS` env
+   (comma-separated) is authenticated as a **read-only** `service` principal.
+   It can call read endpoints (`GET` engineers/rotations/schedule/on-call) but
+   is rejected with `403` on any write (`POST`/`PATCH`/`PUT`/`DELETE`). This is
+   what a headless client such as a Slack bot uses. Leave `ORBIT_SERVICE_TOKENS`
+   empty to disable service-token auth entirely.
