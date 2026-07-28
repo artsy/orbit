@@ -34,6 +34,7 @@ export function serializeRotation(rotation: PrismaRotation): Rotation {
     cadenceDays: rotation.cadenceDays,
     anchorDate: rotation.anchorDate.toISOString(),
     timezone: rotation.timezone,
+    description: rotation.description,
     createdAt: rotation.createdAt.toISOString(),
   }
 }

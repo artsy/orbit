@@ -5,6 +5,7 @@ import FullCalendar from "@fullcalendar/react"
 import { format, parseISO } from "date-fns"
 import { FC, useMemo, useState } from "react"
 import { Engineer } from "rotations/types"
+import { engineerColor } from "rotations/colors"
 import { useSchedule } from "utils/hooks/useApi"
 
 interface RotationCalendarProps {
@@ -12,11 +13,6 @@ interface RotationCalendarProps {
   timezone: string
   engineersById: Record<string, Engineer>
 }
-
-// Base rotation vs. override vs. swap, so the overview reads at a glance.
-const BASE_COLOR = "#4A44E0"
-const OVERRIDE_COLOR = "#C2410C"
-const SWAP_COLOR = "#7C3AED"
 
 // Calendar date (YYYY-MM-DD) of an instant, in the rotation's timezone.
 const zonedDate = (iso: string, timezone: string) =>
@@ -44,21 +40,19 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
         ? engineersById[entry.effectiveEngineerId]?.name ?? "Unknown"
         : "Unassigned"
 
+      // One stable color per on-call engineer; the override/swap status is kept
+      // legible with a title suffix rather than a separate color.
+      const color = engineerColor(entry.effectiveEngineerId)
+      const suffix = isSwap ? " (swap)" : isOverride ? " (override)" : ""
+
       return {
-        title: name,
+        title: `${name}${suffix}`,
         start: zonedDate(entry.periodStart, timezone),
         end: zonedDate(entry.periodEnd, timezone), // exclusive for all-day
         allDay: true,
-        backgroundColor: isSwap
-          ? SWAP_COLOR
-          : isOverride
-          ? OVERRIDE_COLOR
-          : BASE_COLOR,
-        borderColor: isSwap
-          ? SWAP_COLOR
-          : isOverride
-          ? OVERRIDE_COLOR
-          : BASE_COLOR,
+        backgroundColor: color,
+        borderColor: color,
+        textColor: "#FFFFFF",
       }
     })
   }, [schedule, engineersById, timezone])

@@ -30,6 +30,7 @@ export interface Rotation {
   /** Start of period 0; the round-robin is computed relative to this instant. */
   anchorDate: string
   timezone: string
+  description: string | null
   createdAt: string
 }
 
@@ -103,6 +104,7 @@ export interface CreateRotationBody {
   cadenceDays?: number
   anchorDate: string
   timezone?: string
+  description?: string | null
 }
 
 export type UpdateRotationBody = Partial<CreateRotationBody>

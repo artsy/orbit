@@ -10,6 +10,7 @@ import {
 } from "utils/api/handler"
 import { serializeRotation } from "utils/api/serialize"
 import { Rotation, UpdateRotationBody } from "rotations/types"
+import { isAllowedTimezone } from "rotations/timezones"
 
 export default async function handler(
   req: NextApiRequest,
@@ -44,6 +45,14 @@ export default async function handler(
         }
       }
 
+      if (body.timezone !== undefined && !isAllowedTimezone(body.timezone)) {
+        return sendError(
+          res,
+          400,
+          "timezone must be one of Europe/Berlin, Europe/London, America/New_York"
+        )
+      }
+
       const rotation = await prisma.rotation.update({
         where: { id },
         data: {
@@ -55,6 +64,9 @@ export default async function handler(
             ? { cadenceDays: body.cadenceDays }
             : {}),
           ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),
+          ...(body.description !== undefined
+            ? { description: body.description }
+            : {}),
         },
       })
       return res.status(200).json(serializeRotation(rotation))

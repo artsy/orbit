@@ -41,7 +41,15 @@ creates **two reciprocal overrides** that share a `swapGroupId`: engineer A's
 shift is covered by B, and B's shift is covered by A.
 
 **In the UI:** on **`/rotations/<rotationId>`**, click **Swap shifts**. Choose
-engineer A and a date within A's shift, engineer B and a date within B's shift.
+engineer A and engineer B; each engineer's shift field is a dropdown of that
+engineer's **next two upcoming shifts**, nearest one preselected — pick the
+shift to give up from the dropdown rather than typing a date.
+
+You can also start a swap from the schedule list itself: clicking any row
+opens **Swap shifts** pre-filled with that row's engineer as engineer A (that
+shift as A's) and you (the signed-in user, matched by email to an engineer
+record) as engineer B, with your own next upcoming shift preselected for B.
+Adjust either side before submitting.
 
 **Via the API:**
 
@@ -77,5 +85,7 @@ To undo a swap, delete both overrides that share its `swapGroupId`.
 ## Viewing the result
 
 The schedule table on `/rotations/<rotationId>` marks any changed period with an
-**override** or **swap** pill, shows the covering engineer, and strikes through
-the base engineer they replaced. The period containing today is highlighted.
+**override** or **swap** pill. The On-call cell shows the originally scheduled
+engineer in gray on top; when an override or swap changes who's actually
+covering, the covering engineer appears below it. The period containing today
+is highlighted.

@@ -6,6 +6,7 @@ const newRotation = {
   cadenceDays: 7,
   anchorDate: "2026-07-20T10:00:00.000Z",
   timezone: "UTC",
+  description: "Covers the platform",
   createdAt: "2026-07-20T00:00:00.000Z",
 }
 
@@ -39,7 +40,12 @@ test.describe("create rotation", () => {
 
     await page.goto("/rotations/new")
 
+    expect(
+      await page.locator('select[name="timezone"]').inputValue()
+    ).toBe("Europe/Berlin")
+
     await page.locator('input[name="name"]').fill("My rotation")
+    await page.locator('input[name="description"]').fill("Covers the platform")
     await page.locator('input[name="startDate"]').fill("2026-07-20")
     await page.locator('select[name="timezone"]').selectOption("Europe/London")
     // cadence (weekly) and start hour keep their defaults.
@@ -49,5 +55,6 @@ test.describe("create rotation", () => {
     await expect(page).toHaveURL(/\/rotations\/rot-new/)
     expect(postedBody?.cadenceDays).toBe(7)
     expect(postedBody?.timezone).toBe("Europe/London")
+    expect(postedBody?.description).toBe("Covers the platform")
   })
 })

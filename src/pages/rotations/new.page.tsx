@@ -4,6 +4,7 @@ import { Form, Formik } from "formik"
 import { useRouter } from "next/router"
 import * as Yup from "yup"
 import { createRotation } from "utils/api/mutations"
+import { ALLOWED_TIMEZONES, TIMEZONE_LABELS, DEFAULT_TIMEZONE } from "rotations/timezones"
 
 interface NewRotationValues {
   name: string
@@ -11,6 +12,7 @@ interface NewRotationValues {
   startDate: string // YYYY-MM-DD
   startHour: string // "0".."23"
   timezone: string // IANA zone, e.g. "America/New_York"
+  description: string
 }
 
 const cadenceOptions = [
@@ -24,19 +26,10 @@ const hourOptions = Array.from({ length: 24 }, (_, hour) => ({
   text: `${String(hour).padStart(2, "0")}:00`,
 }))
 
-// Static list (avoids server/client hydration drift from timezone detection).
-const timezoneOptions = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "Europe/London",
-  "Europe/Berlin",
-  "Europe/Paris",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-  "UTC",
-].map((tz) => ({ value: tz, text: tz }))
+const timezoneOptions = ALLOWED_TIMEZONES.map((tz) => ({
+  value: tz,
+  text: TIMEZONE_LABELS[tz],
+}))
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("A name is required"),
@@ -62,7 +55,8 @@ export default function NewRotationPage() {
           cadence: "7",
           startDate: "",
           startHour: "10",
-          timezone: "America/New_York",
+          timezone: DEFAULT_TIMEZONE,
+          description: "",
         }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
@@ -86,6 +80,7 @@ export default function NewRotationPage() {
               cadenceDays: Number(values.cadence),
               anchorDate,
               timezone: values.timezone,
+              description: values.description || null,
             })
 
             sendToast({ variant: "success", message: `${rotation.name} created` })
@@ -118,6 +113,15 @@ export default function NewRotationPage() {
               onChange={handleChange}
               onBlur={handleBlur}
               error={touched.name && errors.name}
+            />
+
+            <Input
+              name="description"
+              title="Description (optional)"
+              placeholder="What is this rotation for?"
+              value={values.description}
+              onChange={handleChange}
+              onBlur={handleBlur}
             />
 
             <Select

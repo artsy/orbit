@@ -1,6 +1,6 @@
 import { Box, Button, Flex, Spinner, Text } from "@artsy/palette"
-import { RotationSchedule } from "components/schedule/RotationSchedule"
 import Link from "next/link"
+import { CurrentOnCall } from "components/schedule/CurrentOnCall"
 import { useRotations } from "utils/hooks/useApi"
 
 export default function HomePage() {
@@ -40,22 +40,17 @@ export default function HomePage() {
 
           <Box mt={1}>
             {rotations.map((rotation) => (
-              <Box key={rotation.id} py={0.5}>
+              <Box key={rotation.id} py={1}>
                 <Link
                   href={`/rotations/${rotation.id}`}
                   style={{ color: "inherit" }}
                 >
                   <Text variant="sm-display">{rotation.name}</Text>
                 </Link>
+                <CurrentOnCall rotation={rotation} />
               </Box>
             ))}
           </Box>
-
-          {rotations.length === 1 && (
-            <Box mt={4}>
-              <RotationSchedule rotationId={rotations[0].id} />
-            </Box>
-          )}
         </Box>
       )}
     </Box>
