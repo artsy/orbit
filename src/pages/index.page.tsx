@@ -1,10 +1,14 @@
 import { Box, Button, Flex, Spinner, Text } from "@artsy/palette"
 import Link from "next/link"
+import { useState } from "react"
 import { CurrentOnCall } from "components/schedule/CurrentOnCall"
+import { EditRotationModal } from "components/rotations/EditRotationModal"
+import { Rotation } from "rotations/types"
 import { useRotations } from "utils/hooks/useApi"
 
 export default function HomePage() {
-  const { data: rotations, error, isLoading } = useRotations()
+  const { data: rotations, error, isLoading, mutate } = useRotations()
+  const [editing, setEditing] = useState<Rotation | null>(null)
 
   return (
     <Box>
@@ -55,16 +59,32 @@ export default function HomePage() {
                   borderColor="mono10"
                   borderRadius={4}
                 >
-                  <Link
-                    href={`/rotations/${rotation.id}`}
-                    style={{ color: "inherit" }}
+                  <Flex
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                    gap={1}
                   >
-                    <Text variant="sm-display">{rotation.name}</Text>
-                  </Link>
+                    <Box>
+                      <Link
+                        href={`/rotations/${rotation.id}`}
+                        style={{ color: "inherit" }}
+                      >
+                        <Text variant="sm-display">{rotation.name}</Text>
+                      </Link>
 
-                  <Text variant="xs" color="mono60">
-                    {cadenceLabel} rotation
-                  </Text>
+                      <Text variant="xs" color="mono60">
+                        {cadenceLabel} rotation
+                      </Text>
+                    </Box>
+
+                    <Button
+                      size="small"
+                      variant="secondaryBlack"
+                      onClick={() => setEditing(rotation)}
+                    >
+                      Edit
+                    </Button>
+                  </Flex>
 
                   <Box mt={0.5}>
                     <CurrentOnCall rotation={rotation} />
@@ -74,6 +94,15 @@ export default function HomePage() {
             })}
           </Box>
         </Box>
+      )}
+
+      {editing && (
+        <EditRotationModal
+          rotation={editing}
+          isOpen
+          onClose={() => setEditing(null)}
+          onDone={() => mutate()}
+        />
       )}
     </Box>
   )
