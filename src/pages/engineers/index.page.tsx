@@ -12,7 +12,7 @@ import { Form, Formik } from "formik"
 import { useCallback, useEffect, useState } from "react"
 import * as Yup from "yup"
 import { Engineer } from "rotations/types"
-import { createEngineer, deactivateEngineer } from "utils/api/mutations"
+import { createEngineer, deleteEngineer } from "utils/api/mutations"
 
 interface AddEngineerValues {
   name: string
@@ -30,18 +30,8 @@ const validationSchema = Yup.object().shape({
 export default function EngineersPage() {
   const [engineers, setEngineers] = useState<Engineer[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [deactivatingId, setDeactivatingId] = useState<string | null>(null)
-  const [query, setQuery] = useState("")
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const { sendToast } = useToasts()
-
-  const q = query.trim().toLowerCase()
-  const searchResults = engineers
-    .filter(
-      (engineer) =>
-        engineer.name.toLowerCase().includes(q) ||
-        engineer.email.toLowerCase().includes(q)
-    )
-    .slice(0, 5)
 
   const loadEngineers = useCallback(async () => {
     setIsLoading(true)
@@ -67,30 +57,33 @@ export default function EngineersPage() {
     loadEngineers()
   }, [loadEngineers])
 
-  const handleDeactivate = async (engineer: Engineer) => {
-    if (!window.confirm(`Deactivate ${engineer.name}?`)) return
+  const handleDelete = async (engineer: Engineer) => {
+    if (
+      !window.confirm(
+        `Delete ${engineer.name}? This permanently removes them and their overrides.`
+      )
+    )
+      return
 
-    setDeactivatingId(engineer.id)
+    setDeletingId(engineer.id)
 
     try {
-      const updated = await deactivateEngineer(engineer.id)
+      await deleteEngineer(engineer.id)
 
-      setEngineers((current) =>
-        current.map((e) => (e.id === updated.id ? updated : e))
-      )
+      setEngineers((current) => current.filter((e) => e.id !== engineer.id))
 
       sendToast({
         variant: "success",
-        message: `${engineer.name} deactivated`,
+        message: `${engineer.name} deleted`,
       })
     } catch (error: any) {
       sendToast({
         variant: "error",
-        message: "Error deactivating engineer",
+        message: "Error deleting engineer",
         description: error?.message,
       })
     } finally {
-      setDeactivatingId(null)
+      setDeletingId(null)
     }
   }
 
@@ -190,56 +183,6 @@ export default function EngineersPage() {
 
       <Spacer y={4} />
 
-      <Text variant="lg">Find an engineer</Text>
-
-      <Spacer y={2} />
-
-      <Box maxWidth={400}>
-        <Input
-          title="Search engineers"
-          placeholder="Search by name or email"
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-        />
-      </Box>
-
-      <Spacer y={2} />
-
-      {query.trim().length <= 2 ? (
-        <Text variant="xs" color="mono60">
-          Type at least 3 characters to search.
-        </Text>
-      ) : searchResults.length === 0 ? (
-        <Text variant="sm" color="mono60">
-          No matching engineers.
-        </Text>
-      ) : (
-        <Box
-          data-testid="engineer-search-results"
-          display="flex"
-          flexDirection="column"
-          gap={1}
-        >
-          {searchResults.map((engineer) => (
-            <Box
-              key={engineer.id}
-              p={2}
-              border="1px solid"
-              borderColor="mono10"
-            >
-              <Text variant="sm" fontWeight="bold">
-                {engineer.name}
-              </Text>
-              <Text variant="xs" color="mono60">
-                {engineer.email}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-      )}
-
-      <Spacer y={4} />
-
       <Text variant="lg">All engineers</Text>
 
       <Spacer y={2} />
@@ -257,6 +200,7 @@ export default function EngineersPage() {
           {engineers.map((engineer) => (
             <Flex
               key={engineer.id}
+              data-testid={`engineer-row-${engineer.id}`}
               justifyContent="space-between"
               alignItems="center"
               p={2}
@@ -278,24 +222,21 @@ export default function EngineersPage() {
               </Box>
 
               <Flex alignItems="center" gap={2}>
-                <Text
-                  variant="xs"
-                  color={engineer.active ? "green100" : "mono60"}
-                >
-                  {engineer.active ? "Active" : "Inactive"}
-                </Text>
-
-                {engineer.active && (
-                  <Button
-                    size="small"
-                    variant="secondaryNeutral"
-                    onClick={() => handleDeactivate(engineer)}
-                    loading={deactivatingId === engineer.id}
-                    disabled={deactivatingId !== null}
-                  >
-                    Deactivate
-                  </Button>
+                {!engineer.active && (
+                  <Text variant="xs" color="mono60">
+                    Inactive
+                  </Text>
                 )}
+
+                <Button
+                  size="small"
+                  variant="secondaryNeutral"
+                  onClick={() => handleDelete(engineer)}
+                  loading={deletingId === engineer.id}
+                  disabled={deletingId !== null}
+                >
+                  Delete
+                </Button>
               </Flex>
             </Flex>
           ))}

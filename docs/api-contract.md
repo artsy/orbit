@@ -22,7 +22,7 @@ on missing resource `404 { error }`.
 | GET | `/api/engineers` | — | `Engineer[]` |
 | POST | `/api/engineers` | `CreateEngineerBody` | `Engineer` (201) |
 | PATCH | `/api/engineers/[id]` | `UpdateEngineerBody` | `Engineer` |
-| DELETE | `/api/engineers/[id]` | — | `Engineer` (soft-deactivate: set `active=false`) |
+| DELETE | `/api/engineers/[id]` | — | `Engineer` (hard-deletes; also removes their memberships and covering overrides) |
 
 ## Rotations — domain `rotations`
 

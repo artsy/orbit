@@ -37,21 +37,15 @@ curl -X POST http://localhost:3000/api/engineers \
 
 `slackUsername` is optional and can be updated later via `PATCH /api/engineers/[id]`.
 
-## Find an engineer
+## Delete an engineer
 
-**In the UI:** on **`/engineers`**, use the **Find an engineer** search box to
-look up someone by name or email. Results appear once you've typed more than 2
-characters, and show the top 5 matches (case-insensitive substring match on
-name or email).
+Deleting an engineer **permanently removes** them. Their rotation memberships
+are removed, any overrides where they were the replacement are deleted, and the
+`originalEngineer` snapshot on other overrides is cleared — so no dangling
+references remain.
 
-## Remove (deactivate) an engineer
-
-Engineers are **soft-deactivated** (`active: false`) rather than deleted, so
-historical overrides that reference them stay intact. A deactivated engineer is
-automatically **skipped in every rotation's round-robin** (no need to edit
-membership), and is restored to the rotation if reactivated.
-
-**In the UI:** on **`/engineers`**, click **Deactivate** next to the person.
+**In the UI:** on **`/engineers`**, click **Delete** next to the person (you'll
+be asked to confirm).
 
 **Via the API:**
 
