@@ -66,9 +66,8 @@ An operator with cluster access does this once (see the Artsy
 2. Create the ECR repository and push the first image
    (`hokusai registry push` / `hokusai build`).
 3. Create the citadel/fortress secret set with the variables listed above.
-4. Fill in the CircleCI **`project_id`** placeholder (`REPLACE_ME` in
-   `.circleci/config.yml`) with the project's Horizon id so the release blocker
-   works.
+4. The Horizon **`project_id`** in `.circleci/config.yml` (`282`) gates
+   production releases via the `horizon/block` job on the `release` branch.
 5. Wire the `hokusai` CircleCI context and open the pipeline.
 
 Once set up, the flow is: merge to `main` → CI builds, pushes, and deploys to
