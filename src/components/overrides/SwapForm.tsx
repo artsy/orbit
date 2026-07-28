@@ -2,7 +2,6 @@ import { Box, Button, Flex, Input, Select, useToasts } from "@artsy/palette"
 import { TZDate } from "@date-fns/tz"
 import { format, parseISO } from "date-fns"
 import { Form, Formik, useFormikContext } from "formik"
-import { useEffect } from "react"
 import * as Yup from "yup"
 import { Engineer, ScheduleEntry } from "rotations/types"
 import { createSwap } from "utils/api/mutations"
@@ -99,21 +98,14 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
     text: shiftLabel(e, timezone),
   }))
 
-  useEffect(() => {
-    const isValid = optionsA.some((o) => o.value === values.dateA)
-    if (!values.dateA || !isValid) {
-      setFieldValue("dateA", optionsA[0]?.value ?? "")
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.engineerAId])
-
-  useEffect(() => {
-    const isValid = optionsB.some((o) => o.value === values.dateB)
-    if (!values.dateB || !isValid) {
-      setFieldValue("dateB", optionsB[0]?.value ?? "")
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.engineerBId])
+  // Selecting an engineer also picks their nearest upcoming shift right away, so
+  // the shift dropdown is populated on the first selection (no toggling needed).
+  const selectEngineer = (field: "engineerAId" | "engineerBId", value: string) => {
+    const dateField = field === "engineerAId" ? "dateA" : "dateB"
+    const [nearest] = upcomingShiftsFor(value, entries)
+    setFieldValue(field, value)
+    setFieldValue(dateField, nearest?.periodStart ?? "")
+  }
 
   return (
     <Box as={Form} display="flex" flexDirection="column" gap={2}>
@@ -122,7 +114,7 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
         title="Engineer A"
         options={engineerOptions}
         selected={values.engineerAId}
-        onSelect={(value) => setFieldValue("engineerAId", value)}
+        onSelect={(value) => selectEngineer("engineerAId", value)}
         onBlur={handleBlur}
         error={touched.engineerAId && errors.engineerAId}
       />
@@ -142,7 +134,7 @@ const SwapFormFields: React.FC<SwapFormFieldsProps> = ({
         title="Engineer B"
         options={engineerOptions}
         selected={values.engineerBId}
-        onSelect={(value) => setFieldValue("engineerBId", value)}
+        onSelect={(value) => selectEngineer("engineerBId", value)}
         onBlur={handleBlur}
         error={touched.engineerBId && errors.engineerBId}
       />
