@@ -12,6 +12,13 @@ title: Getting started
 
 ## Setup
 
+::: tip Artsy engineers
+`yarn setup:artsy` does steps 1–2 for you: it installs dependencies and pulls a
+pre-filled `.env.local` from Citadel (S3), so you can skip straight to step 3.
+It requires AWS access to the `artsy-citadel` bucket. Everyone else, follow the
+manual steps below.
+:::
+
 1. **Install dependencies**
 
    ```sh
