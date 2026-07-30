@@ -59,7 +59,7 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
       >
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
           <Flex alignItems="center" gap={0.5}>
-            <Image src="/logo.png" alt="" width={40} height={40} />
+            <Image src="/logo.png" alt="" width={48} height={48} />
             <Text variant="lg-display">Orbit</Text>
           </Flex>
         </Link>
