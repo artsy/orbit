@@ -1,3 +1,5 @@
+<img src="public/logo-black.png" alt="Orbit logo" width="64" height="64" />
+
 # Orbit
 
 Engineer on-call rotation scheduler.
