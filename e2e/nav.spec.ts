@@ -9,7 +9,7 @@ test.describe("global nav", () => {
     await page.goto("/")
 
     await expect(page.getByText("Log out")).toBeVisible()
-    await expect(page.locator("header svg").first()).toBeVisible()
+    await expect(page.locator("header img").first()).toBeVisible()
 
     const brandLink = page.getByRole("link", { name: "Orbit" })
     await expect(brandLink).toBeVisible()
