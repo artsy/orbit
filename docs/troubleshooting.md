@@ -16,12 +16,16 @@ missing a `.env.local`.
 valid Gravity ClientApplication credentials — see
 [Gravity API authentication](https://github.com/artsy/gravity/blob/main/doc/ApiAuthentication.md).
 
-### You can sign in but can't make changes
+### "Access denied" on sign-in
 
-Writes require the Gravity `team` role. If you're logged out immediately or see
-an authorization error, your user is likely missing that role. In staging you
-can assign it yourself via the Gravity console; production role changes go
-through the platform team.
+Orbit requires the Gravity **`team`** role — that's the only bar, for both
+signing in and using every feature. The error page shows which account was
+rejected; sign out (the button on that page), then sign back in with an
+account that has `team`. In staging you can assign yourself the role via the
+Gravity console; production role changes go through the platform team.
+
+Roles are only read at sign-in — if you were just granted `team`, sign out and
+back in to pick it up.
 
 ### Database connection errors
 

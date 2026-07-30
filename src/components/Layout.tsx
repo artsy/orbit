@@ -1,5 +1,6 @@
 import { Box, Button, Stack, Text, Toasts } from "@artsy/palette"
 import { getProviders, signIn } from "next-auth/react"
+import { useRouter } from "next/router"
 import { useEffect, useState } from "react"
 import { GlobalNav } from "./GlobalNav"
 import type { UserWithAccessToken } from "system"
@@ -10,11 +11,26 @@ interface LayoutProps {
   tokenValid: boolean
 }
 
+// Pages that must render their own content even when signed out — normally
+// the unauthenticated branch below replaces `children` entirely with a
+// generic sign-in screen, which would otherwise swallow these.
+const PUBLIC_PATHS = ["/auth/error"]
+
 export const Layout: React.FC<LayoutProps> = ({
   children,
   user,
   tokenValid,
 }) => {
+  const router = useRouter()
+
+  if (PUBLIC_PATHS.includes(router.pathname)) {
+    return (
+      <Box as="main" mx="auto" p={2} py={[2, 4]} textAlign="center">
+        {children}
+      </Box>
+    )
+  }
+
   return user && tokenValid ? (
     <AuthorizedLayout user={user}>{children}</AuthorizedLayout>
   ) : (
