@@ -58,3 +58,15 @@ spec that drives it against mocked `/api` responses. If you change an existing
 flow, update its spec. Skip only when there's genuinely nothing user-facing to
 exercise (pure refactors, backend-only tweaks with no UI change) — and say so.
 Tests run as an injected-session user; we do not e2e-test the auth flow itself.
+
+## Include screenshots or a recording in PRs, when it makes sense
+
+**Any user-facing/UI change should show what changed, not just describe it** —
+use the PR template's "Screenshots / recording" section. A before/after pair
+is ideal; if there's no meaningful "before" (a new page or component), just
+show the current view. For a flow a still image can't convey — a multi-step
+interaction, a drag, an animation, a modal sequence — record a short screen
+capture instead. Skip this for backend-only or non-visual changes.
+
+Drive the running app with Playwright or the Chrome DevTools MCP tools to
+capture these rather than describing the UI in prose.
