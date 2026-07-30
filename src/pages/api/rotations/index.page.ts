@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeRotation } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { CreateRotationBody, Rotation } from "rotations/types"
 import { isAllowedTimezone } from "rotations/timezones"
 
@@ -60,6 +61,13 @@ export default async function handler(
             ? { description: body.description }
             : {}),
         },
+      })
+      await recordEvent(prisma, {
+        action: "rotation.created",
+        actorEmail: user.email as string,
+        summary: `Created rotation "${rotation.name}"`,
+        rotationId: rotation.id,
+        rotationName: rotation.name,
       })
       return res.status(201).json(serializeRotation(rotation))
     }

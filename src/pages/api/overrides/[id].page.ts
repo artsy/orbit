@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeOverride } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { Override, UpdateOverrideBody } from "rotations/types"
 
 export default async function handler(
@@ -28,7 +29,7 @@ export default async function handler(
 
   const existing = await prisma.override.findUnique({
     where: { id },
-    include: { replacementEngineer: true },
+    include: { replacementEngineer: true, rotation: true },
   })
   if (!existing) return sendError(res, 404, "Override not found")
 
@@ -36,6 +37,15 @@ export default async function handler(
     const override = await prisma.override.delete({
       where: { id },
       include: { replacementEngineer: true },
+    })
+    await recordEvent(prisma, {
+      action: "override.deleted",
+      actorEmail: user.email as string,
+      summary: `Deleted override for ${
+        existing.replacementEngineer?.name ?? existing.replacementEngineerId
+      } on "${existing.rotation.name}"`,
+      rotationId: existing.rotation.id,
+      rotationName: existing.rotation.name,
     })
     return res.status(200).json(serializeOverride(override))
   }
@@ -78,6 +88,15 @@ export default async function handler(
     where: { id },
     data,
     include: { replacementEngineer: true },
+  })
+  await recordEvent(prisma, {
+    action: "override.updated",
+    actorEmail: user.email as string,
+    summary: `Updated override for ${
+      override.replacementEngineer?.name ?? override.replacementEngineerId
+    } on "${existing.rotation.name}"`,
+    rotationId: existing.rotation.id,
+    rotationName: existing.rotation.name,
   })
   return res.status(200).json(serializeOverride(override))
 }

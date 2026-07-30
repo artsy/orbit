@@ -1,6 +1,7 @@
 import useSWR from "swr"
 import {
   Engineer,
+  EventLogEntry,
   Override,
   Rotation,
   RotationMember,
@@ -52,4 +53,12 @@ export const useOverrides = (id?: string) => {
     id ? `/api/rotations/${id}/overrides` : null,
     fetcher
   )
+}
+
+export const useEvents = (rotationId?: string) => {
+  const key = rotationId
+    ? `/api/events?rotationId=${encodeURIComponent(rotationId)}`
+    : "/api/events"
+
+  return useSWR<EventLogEntry[]>(key, fetcher)
 }

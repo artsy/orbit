@@ -22,6 +22,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 async function main() {
   // --- Clear existing data, FK-safe order -----------------------------------
+  await prisma.event.deleteMany()
   await prisma.override.deleteMany()
   await prisma.rotationMember.deleteMany()
   await prisma.rotation.deleteMany()
@@ -52,6 +53,17 @@ async function main() {
     },
   })
 
+  // --- Sample event log entries, for a populated demo ------------------------
+  await prisma.event.create({
+    data: {
+      action: "rotation.created",
+      actorEmail: "ada@artsymail.com",
+      summary: `Created rotation "${rotation.name}"`,
+      rotationId: rotation.id,
+      rotationName: rotation.name,
+    },
+  })
+
   // --- Rotation members, ordered round-robin -------------------------------
   await prisma.rotationMember.createMany({
     data: engineers.map((engineer, position) => ({
@@ -75,6 +87,16 @@ async function main() {
       originalEngineerId: ada.id,
       reason: "Ada is out at a conference",
       createdByEmail: "ada@artsymail.com",
+    },
+  })
+
+  await prisma.event.create({
+    data: {
+      action: "override.created",
+      actorEmail: "ada@artsymail.com",
+      summary: `Added override for ${grace.name} on "${rotation.name}"`,
+      rotationId: rotation.id,
+      rotationName: rotation.name,
     },
   })
 
@@ -113,6 +135,16 @@ async function main() {
       },
     }),
   ])
+
+  await prisma.event.create({
+    data: {
+      action: "swap.created",
+      actorEmail: "alan@artsymail.com",
+      summary: `Swapped shifts between ${alan.name} and ${katherine.name} on "${rotation.name}"`,
+      rotationId: rotation.id,
+      rotationName: rotation.name,
+    },
+  })
 
   // --- Release Captain rotation ---------------------------------------------
   // Mirrors artsy/release-lookout's biweekly captain rotation: an ordered list
@@ -167,6 +199,7 @@ async function main() {
       .map((e) => e.name)
       .join(", ")}`
   )
+  console.log(`  - 3 event log entries (rotation created, override created, swap created)`)
 }
 
 main()
