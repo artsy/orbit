@@ -59,7 +59,14 @@ const AuthorizedLayout: React.FC<{
         {children}
       </Box>
 
-      <Box position="fixed" zIndex={10} bottom={1} right={1} width={400}>
+      <Box
+        position="fixed"
+        zIndex={10}
+        bottom={1}
+        right={1}
+        left={[1, "auto"]}
+        width={["auto", 400]}
+      >
         <Toasts />
       </Box>
     </>

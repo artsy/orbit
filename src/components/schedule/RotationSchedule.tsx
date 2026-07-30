@@ -265,7 +265,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
           : "No one is currently on-call."}
       </Text>
 
-      <Flex gap={1} my={2}>
+      <Flex gap={1} my={2} flexWrap="wrap">
         <CreateOverrideButton rotationId={rotationId} onDone={handleDone} />
         <CreateSwapButton
           rotationId={rotationId}

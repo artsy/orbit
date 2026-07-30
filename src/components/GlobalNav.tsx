@@ -9,7 +9,9 @@ interface GlobalNavProps {
   user?: UserWithAccessToken
 }
 
-// A nav link that underlines and brightens when its section is active.
+// A nav link that underlines and brightens when its section is active. Its
+// label never wraps mid-word — on narrow screens the whole link drops to the
+// next line instead (see the wrapping Flex/Stack below).
 const NavLink: React.FC<{ href: string; active: boolean; label: string }> = ({
   href,
   active,
@@ -21,6 +23,7 @@ const NavLink: React.FC<{ href: string; active: boolean; label: string }> = ({
       style={{
         opacity: active ? 1 : 0.7,
         textDecoration: active ? "underline" : "none",
+        whiteSpace: "nowrap",
       }}
     >
       {label}
@@ -42,10 +45,18 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
       color="mono0"
       justifyContent="space-between"
       alignItems="center"
+      flexWrap="wrap"
+      gap={1}
       py={1}
-      px={2}
+      px={[1, 2]}
+      width="100%"
     >
-      <Stack flexDirection="row" gap={2} alignItems="center">
+      <Stack
+        flexDirection="row"
+        flexWrap="wrap"
+        gap={[1, 2]}
+        alignItems="center"
+      >
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
           <Flex alignItems="center" gap={0.5}>
             <Image src="/logo.png" alt="" width={48} height={48} />
@@ -69,14 +80,21 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
         )}
       </Stack>
 
-      <Flex alignItems="center" gap={2}>
+      <Flex alignItems="center" gap={[1, 2]} flexWrap="wrap">
         {user && (
           <>
-            <Text variant="xs" color="mono30">
+            <Text
+              variant="xs"
+              color="mono30"
+              display={["none", "block"]}
+              style={{ whiteSpace: "nowrap" }}
+            >
               {user.email}
             </Text>
             <Clickable onClick={() => federatedSignOut("/")}>
-              <Text variant="sm">Log out</Text>
+              <Text variant="sm" style={{ whiteSpace: "nowrap" }}>
+                Log out
+              </Text>
             </Clickable>
           </>
         )}
