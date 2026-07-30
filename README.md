@@ -5,8 +5,13 @@ Engineer on-call rotation scheduler.
 ## Meta
 
 - **State:** development
+- **Staging:** [https://orbit-staging.artsy.net](https://orbit-staging.artsy.net)
+- **Production:** [https://orbit.artsy.net](https://orbit.artsy.net)
 - **Docs:** [https://artsy.github.io/orbit/](https://artsy.github.io/orbit/)
 - **GitHub:** [https://github.com/artsy/orbit](https://github.com/artsy/orbit)
+- **Deployment:**
+  - Merges to `main` automatically deploy to staging.
+  - Promoting `main` → `release` automatically deploys to production, gated by a Horizon release block. ([Start a deploy...](https://github.com/artsy/orbit/compare/release...main?expand=1))
 - **Point People:** [@mounirdhahri](https://github.com/mounirdhahri)
 
 ## Getting Started
