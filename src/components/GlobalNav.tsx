@@ -2,7 +2,6 @@ import { Clickable, Flex, Stack, Text } from "@artsy/palette"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/router"
-import { useThemeMode } from "system/ThemeMode"
 import { federatedSignOut } from "utils/federatedSignOut"
 import type { UserWithAccessToken } from "system"
 
@@ -31,7 +30,6 @@ const NavLink: React.FC<{ href: string; active: boolean; label: string }> = ({
 
 export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
   const router = useRouter()
-  const { mode, toggle } = useThemeMode()
 
   const rotationsActive =
     router.pathname === "/" || router.pathname.startsWith("/rotations")
@@ -72,9 +70,6 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
       </Stack>
 
       <Flex alignItems="center" gap={2}>
-        <Clickable onClick={toggle} aria-label="Toggle color theme">
-          <Text variant="sm">{mode === "light" ? "Dark" : "Light"}</Text>
-        </Clickable>
         {user && (
           <>
             <Text variant="xs" color="mono30">
