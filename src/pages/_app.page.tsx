@@ -1,6 +1,7 @@
 import "../styles/globals.css"
 import App from "next/app"
 import type { AppContext, AppProps } from "next/app"
+import Head from "next/head"
 import { getSession } from "next-auth/react"
 import { Layout } from "components/Layout"
 import { Boot } from "system/Boot"
@@ -11,6 +12,9 @@ export default function OrbitApp({ Component, pageProps }: AppProps) {
 
   return (
     <Boot session={pageProps.session ?? null}>
+      <Head>
+        <title>Orbit</title>
+      </Head>
       <Layout user={user} tokenValid={pageProps.tokenValid ?? false}>
         <Component {...pageProps} />
       </Layout>
