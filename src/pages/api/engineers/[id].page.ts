@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeEngineer } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { Engineer, UpdateEngineerBody } from "rotations/types"
 
 export default async function handler(
@@ -40,6 +41,11 @@ export default async function handler(
           ...(body.active !== undefined ? { active: body.active } : {}),
         },
       })
+      await recordEvent(prisma, {
+        action: "engineer.updated",
+        actorEmail: user.email as string,
+        summary: `Updated engineer ${engineer.name}`,
+      })
       return res.status(200).json(serializeEngineer(engineer))
     }
 
@@ -58,7 +64,15 @@ export default async function handler(
           data: { originalEngineerId: null },
         })
         await tx.rotationMember.deleteMany({ where: { engineerId: id } })
-        return tx.engineer.delete({ where: { id } })
+        const deleted = await tx.engineer.delete({ where: { id } })
+
+        await recordEvent(tx, {
+          action: "engineer.deleted",
+          actorEmail: user.email as string,
+          summary: `Deleted engineer ${existing.name} (${existing.email})`,
+        })
+
+        return deleted
       })
       return res.status(200).json(serializeEngineer(engineer))
     }

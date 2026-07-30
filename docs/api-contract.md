@@ -91,6 +91,23 @@ The `/swaps` handler uses `buildSwap` from the logic module to compute the two
 override payloads, generates a shared `swapGroupId`, and persists both in a
 transaction.
 
+## Event log — domain `events`
+
+| Method | Route | Query | Response |
+|---|---|---|---|
+| GET | `/api/events` | `rotationId` (optional), `limit` (optional, default 200, max 1000) | `EventLogEntry[]`, newest first |
+
+Read-only — there's no `manage` action for this domain, and nothing writes to
+it directly. Every mutating endpoint above (rotations, membership, engineers,
+overrides, swaps) records an `EventLogEntry` as a side effect of its write, via
+the shared `recordEvent` helper in `src/utils/api/events.ts`. See
+[Event log](./event-log.md) for the full list of recorded actions.
+
+An `EventLogEntry` has no live relation to the rotation it references —
+`rotationId`/`rotationName` are a denormalized snapshot, so entries persist
+even after the rotation itself is deleted (`rotationId` is `null` in that
+case).
+
 ## Health
 
 | Method | Route | Response |

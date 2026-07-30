@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeMember } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { RotationMember, SetMembersBody } from "rotations/types"
 
 export default async function handler(
@@ -61,6 +62,14 @@ export default async function handler(
             engineerId,
             position,
           })),
+        })
+
+        await recordEvent(tx, {
+          action: "membership.updated",
+          actorEmail: user.email as string,
+          summary: `Updated membership for "${rotation.name}" (${engineerIds.length} engineer(s))`,
+          rotationId: rotation.id,
+          rotationName: rotation.name,
         })
 
         return tx.rotationMember.findMany({

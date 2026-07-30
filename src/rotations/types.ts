@@ -102,6 +102,22 @@ export interface OnCallResponse {
   next: OnCallSlot | null
 }
 
+/**
+ * One row in the append-only Event Log — an audit trail of who did what,
+ * when (see /events). `rotationId`/`rotationName` are a denormalized
+ * snapshot, not a live reference, so they still show up after the rotation
+ * itself is deleted.
+ */
+export interface EventLogEntry {
+  id: string
+  action: string
+  summary: string
+  actorEmail: string
+  rotationId: string | null
+  rotationName: string | null
+  createdAt: string
+}
+
 // ---------------------------------------------------------------------------
 // API request bodies
 // ---------------------------------------------------------------------------
