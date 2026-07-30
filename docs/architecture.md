@@ -62,6 +62,16 @@ configured provider, so you can authenticate against a different OAuth/OIDC
 provider — see
 [Authenticating with a different provider](getting-started.md#authenticating-with-a-different-provider).
 
+The sign-in gate (`signIn` callback in `[...nextauth].page.ts`) requires
+exactly the `team` role — the same bar `PERMISSIONS` uses everywhere else, so
+nobody can sign in only to be blocked on every subsequent action. A user
+without `team` is redirected to a custom error page (`/auth/error`) showing
+which account was denied and a sign-out control, rather than next-auth's
+generic error screen.
+
+Roles are captured once, at initial sign-in — a role granted (or revoked) in
+Gravity afterward doesn't take effect until the user signs out and back in.
+
 ## Theming
 
 The UI is built with [@artsy/palette](https://github.com/artsy/palette) and

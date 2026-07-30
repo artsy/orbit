@@ -2,12 +2,28 @@ import NextAuth, { type NextAuthOptions } from "next-auth"
 import { Role } from "system"
 
 export const authOptions: NextAuthOptions = {
+  // Custom error page so a rejected sign-in shows which account was denied
+  // and how to fix it, instead of next-auth's generic "Access Denied" screen.
+  pages: {
+    error: "/auth/error",
+  },
   callbacks: {
-    // only allow those with relevant roles to sign in
+    // Only Gravity `team` role holders may use Orbit — this must match
+    // exactly what PERMISSIONS in `system/index.ts` grants access to.
+    // Previously this admitted anyone with *any* recognized Role value
+    // (including `product_development`), which every PERMISSIONS domain
+    // only ever grants to `team`/`service` — so someone with just
+    // `product_development` could sign in, then get blocked on every single
+    // action with no explanation.
     signIn: async ({ profile }) => {
       // @ts-expect-error
       const userRoles = (profile?.roles as string[]) || []
-      return Object.values(Role).some((r) => userRoles.includes(r))
+      if (userRoles.includes(Role.team)) return true
+
+      // Returning a string (rather than `false`) redirects the browser there
+      // directly, letting us pass along which email was denied.
+      const email = profile?.email ?? ""
+      return `/auth/error?error=AccessDenied&email=${encodeURIComponent(email)}`
     },
     jwt: async ({ token, user, account }) => {
       if (account) {
