@@ -72,6 +72,15 @@ generic error screen.
 Roles are captured once, at initial sign-in — a role granted (or revoked) in
 Gravity afterward doesn't take effect until the user signs out and back in.
 
+**Signing out is federated.** next-auth's `signOut()` alone only clears
+Orbit's own session — Gravity has no `end_session` endpoint wired into the
+custom `"artsy"` provider, so signing in again would just silently
+re-authenticate the same Artsy account (Gravity has no account picker).
+`src/utils/federatedSignOut.ts` clears Orbit's session, then redirects through
+Gravity's `/api/v1/sessions/destroy` (a GET-able endpoint Rails' CSRF
+protection doesn't guard) with a `redirect_uri` back into Orbit, so both
+sessions actually end.
+
 ## Theming
 
 The UI is built with [@artsy/palette](https://github.com/artsy/palette) and

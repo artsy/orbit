@@ -1,6 +1,6 @@
 import { Button, Stack, Text } from "@artsy/palette"
-import { signOut } from "next-auth/react"
 import { useRouter } from "next/router"
+import { federatedSignOut } from "utils/federatedSignOut"
 
 export default function AuthErrorPage() {
   const router = useRouter()
@@ -26,8 +26,9 @@ export default function AuthErrorPage() {
             )}
           </Text>
           <Text variant="sm" color="mono60" maxWidth={480}>
-            Sign out, then sign in again with an Artsy account that has the
-            Gravity <code>team</code> role.
+            Signing out below clears your Artsy session too, so you can sign
+            in again with an account that has the Gravity{" "}
+            <code>team</code> role.
           </Text>
         </>
       ) : (
@@ -36,7 +37,7 @@ export default function AuthErrorPage() {
         </Text>
       )}
 
-      <Button onClick={() => signOut({ callbackUrl: "/" })}>Sign out</Button>
+      <Button onClick={() => federatedSignOut("/")}>Sign out</Button>
     </Stack>
   )
 }

@@ -1,9 +1,9 @@
 import { Clickable, Flex, Stack, Text } from "@artsy/palette"
-import { signOut } from "next-auth/react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/router"
 import { useThemeMode } from "system/ThemeMode"
+import { federatedSignOut } from "utils/federatedSignOut"
 import type { UserWithAccessToken } from "system"
 
 interface GlobalNavProps {
@@ -80,7 +80,7 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
             <Text variant="xs" color="mono30">
               {user.email}
             </Text>
-            <Clickable onClick={() => signOut({ callbackUrl: "/" })}>
+            <Clickable onClick={() => federatedSignOut("/")}>
               <Text variant="sm">Log out</Text>
             </Clickable>
           </>

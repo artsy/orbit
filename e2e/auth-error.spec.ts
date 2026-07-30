@@ -15,7 +15,7 @@ test.describe("auth error page", () => {
     await expect(page.getByText("Access denied")).toBeVisible()
     await expect(page.getByText("someone@example.com")).toBeVisible()
     await expect(
-      page.getByText("Sign out, then sign in again", { exact: false })
+      page.getByText("clears your Artsy session too", { exact: false })
     ).toBeVisible()
     await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible()
   })
