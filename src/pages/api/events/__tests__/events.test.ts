@@ -3,12 +3,8 @@ import type { NextApiRequest, NextApiResponse } from "next"
 
 jest.mock("lib/db", () => ({
   prisma: {
-    engineer: {
-      findMany: jest.fn(),
-      create: jest.fn(),
-    },
     event: {
-      create: jest.fn(),
+      findMany: jest.fn(),
     },
   },
 }))
@@ -22,9 +18,7 @@ import { getSessionUser } from "utils/auth"
 import handler from "../index.page"
 
 const mockGetSessionUser = getSessionUser as jest.Mock
-const mockFindMany = prisma.engineer.findMany as jest.Mock
-const mockCreate = prisma.engineer.create as jest.Mock
-const mockRecordEvent = prisma.event.create as jest.Mock
+const mockFindMany = prisma.event.findMany as jest.Mock
 
 const TEAM_USER = {
   name: "Ada Lovelace",
@@ -33,20 +27,30 @@ const TEAM_USER = {
   roles: ["team"],
 }
 
-const ENGINEER = {
-  id: "eng-1",
-  name: "Ada Lovelace",
-  email: "ada@artsy.net",
-  active: true,
+const EVENT = {
+  id: "evt-1",
+  action: "rotation.created",
+  summary: 'Created rotation "Platform on-call"',
+  actorEmail: "ada@artsy.net",
+  rotationId: "rot-1",
+  rotationName: "Platform on-call",
   createdAt: new Date("2026-01-01T00:00:00.000Z"),
 }
 
+const TOKEN = "svc-token-abc"
+const ORIGINAL_TOKENS = process.env.ORBIT_SERVICE_TOKENS
+
 beforeEach(() => {
   jest.clearAllMocks()
+  delete process.env.ORBIT_SERVICE_TOKENS
 })
 
-describe("/api/engineers", () => {
-  it("returns 401 when there is no session user", async () => {
+afterAll(() => {
+  process.env.ORBIT_SERVICE_TOKENS = ORIGINAL_TOKENS
+})
+
+describe("/api/events", () => {
+  it("returns 401 when there is no session user or service token", async () => {
     mockGetSessionUser.mockResolvedValue(undefined)
 
     const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
@@ -58,9 +62,9 @@ describe("/api/engineers", () => {
     expect(res._getStatusCode()).toBe(401)
   })
 
-  it("lists engineers on GET", async () => {
+  it("lists events on GET, newest first", async () => {
     mockGetSessionUser.mockResolvedValue(TEAM_USER)
-    mockFindMany.mockResolvedValue([ENGINEER])
+    mockFindMany.mockResolvedValue([EVENT])
 
     const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
       method: "GET",
@@ -71,51 +75,49 @@ describe("/api/engineers", () => {
     expect(res._getStatusCode()).toBe(200)
     const data = res._getJSONData() as any
     expect(data).toHaveLength(1)
-    expect(data[0].id).toBe("eng-1")
+    expect(data[0].id).toBe("evt-1")
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: "desc" } })
+    )
   })
 
-  it("creates an engineer on POST", async () => {
+  it("filters by rotationId when provided", async () => {
     mockGetSessionUser.mockResolvedValue(TEAM_USER)
-    mockCreate.mockResolvedValue(ENGINEER)
+    mockFindMany.mockResolvedValue([])
 
     const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-      method: "POST",
-      body: { name: "Ada Lovelace", email: "ada@artsy.net" },
+      method: "GET",
+      query: { rotationId: "rot-1" },
     })
 
     await handler(req, res)
 
-    expect(res._getStatusCode()).toBe(201)
-    expect((res._getJSONData() as any).email).toBe("ada@artsy.net")
-
-    // Every mutation is recorded in the Event Log — see utils/api/events.ts.
-    expect(mockRecordEvent).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        action: "engineer.created",
-        actorEmail: "ada@artsy.net",
-      }),
-    })
+    expect(res._getStatusCode()).toBe(200)
+    expect(mockFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { rotationId: "rot-1" } })
+    )
   })
 
-  it("returns 400 when POST is missing required fields", async () => {
-    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+  it("allows a read with a valid service token (read-only role)", async () => {
+    mockGetSessionUser.mockResolvedValue(undefined)
+    mockFindMany.mockResolvedValue([])
+    process.env.ORBIT_SERVICE_TOKENS = TOKEN
 
     const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-      method: "POST",
-      body: { name: "Missing Email" },
+      method: "GET",
+      headers: { authorization: `Bearer ${TOKEN}` },
     })
 
     await handler(req, res)
 
-    expect(res._getStatusCode()).toBe(400)
-    expect(mockCreate).not.toHaveBeenCalled()
+    expect(res._getStatusCode()).toBe(200)
   })
 
   it("returns 405 for unsupported methods", async () => {
     mockGetSessionUser.mockResolvedValue(TEAM_USER)
 
     const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-      method: "DELETE",
+      method: "POST",
     })
 
     await handler(req, res)

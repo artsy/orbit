@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeRotation } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { Rotation, UpdateRotationBody } from "rotations/types"
 import { isAllowedTimezone } from "rotations/timezones"
 
@@ -69,6 +70,13 @@ export default async function handler(
             : {}),
         },
       })
+      await recordEvent(prisma, {
+        action: "rotation.updated",
+        actorEmail: user.email as string,
+        summary: `Updated rotation "${rotation.name}"`,
+        rotationId: rotation.id,
+        rotationName: rotation.name,
+      })
       return res.status(200).json(serializeRotation(rotation))
     }
 
@@ -79,6 +87,13 @@ export default async function handler(
       if (!existing) return sendError(res, 404, "Rotation not found")
 
       const rotation = await prisma.rotation.delete({ where: { id } })
+      await recordEvent(prisma, {
+        action: "rotation.deleted",
+        actorEmail: user.email as string,
+        summary: `Deleted rotation "${existing.name}"`,
+        rotationId: null,
+        rotationName: existing.name,
+      })
       return res.status(200).json(serializeRotation(rotation))
     }
 

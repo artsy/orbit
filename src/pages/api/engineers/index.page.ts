@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeEngineer } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { CreateEngineerBody, Engineer } from "rotations/types"
 
 export default async function handler(
@@ -43,6 +44,11 @@ export default async function handler(
           slackUserId: body.slackUserId ?? null,
           active: body.active ?? true,
         },
+      })
+      await recordEvent(prisma, {
+        action: "engineer.created",
+        actorEmail: user.email as string,
+        summary: `Added engineer ${engineer.name} (${engineer.email})`,
       })
       return res.status(201).json(serializeEngineer(engineer))
     }

@@ -26,8 +26,8 @@ Relay/Metaphysics layer.
 | `src/pages/api/` | REST endpoints (see the [API contract](./api-contract.md)), backed by Prisma. |
 | `src/system/` | RBAC (`Role`, `isPermitted`, `assertPermitted`) and app boot. |
 | `src/components/` | Palette UI — the schedule view and the override/swap forms. |
-| `src/pages/` | Routes: home, `/rotations/[id]`, `/engineers`. |
-| `prisma/schema.prisma` | Data model: `Engineer`, `Rotation`, `RotationMember`, `Override`. |
+| `src/pages/` | Routes: home, `/rotations/[id]`, `/engineers`, `/events`. |
+| `prisma/schema.prisma` | Data model: `Engineer`, `Rotation`, `RotationMember`, `Override`, `Event`. |
 
 ## The rotation model
 
@@ -46,6 +46,12 @@ Relay/Metaphysics layer.
   range. A swap is two overrides sharing a `swapGroupId`.
 - The schedule is **computed on read** (`getScheduleForRange`) — overrides are
   the only mutable schedule state.
+- Every mutation across the app (rotations, membership, engineers, overrides,
+  swaps) is recorded as an `Event` (see [Event log](./event-log.md)).
+  Deliberately **not** related to `Rotation`/`Engineer`/`Override` via a
+  foreign key — those all cascade-delete, and history should survive the
+  thing it describes being deleted. `Event` instead carries a denormalized
+  `rotationId`/`rotationName` snapshot.
 
 ## Auth & permissions
 

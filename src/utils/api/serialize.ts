@@ -9,12 +9,19 @@
  */
 import type {
   Engineer as PrismaEngineer,
+  Event as PrismaEvent,
   Override as PrismaOverride,
   Rotation as PrismaRotation,
   RotationMember as PrismaRotationMember,
 } from "@prisma/client"
 
-import { Engineer, Override, Rotation, RotationMember } from "rotations/types"
+import {
+  Engineer,
+  EventLogEntry,
+  Override,
+  Rotation,
+  RotationMember,
+} from "rotations/types"
 
 export function serializeEngineer(engineer: PrismaEngineer): Engineer {
   return {
@@ -68,5 +75,17 @@ export function serializeOverride(
     replacementEngineer: override.replacementEngineer
       ? serializeEngineer(override.replacementEngineer)
       : undefined,
+  }
+}
+
+export function serializeEvent(event: PrismaEvent): EventLogEntry {
+  return {
+    id: event.id,
+    action: event.action,
+    summary: event.summary,
+    actorEmail: event.actorEmail,
+    rotationId: event.rotationId,
+    rotationName: event.rotationName,
+    createdAt: event.createdAt.toISOString(),
   }
 }

@@ -16,6 +16,7 @@ import {
   serializeOverride,
   serializeRotation,
 } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { CreateSwapBody, Override } from "rotations/types"
 
 export default async function handler(
@@ -104,6 +105,23 @@ export default async function handler(
         createdByEmail: user.email as string,
       },
       include: { replacementEngineer: true },
+    })
+
+    const engineerA = serializedMembers.find(
+      (m) => m.engineerId === body.engineerAId
+    )?.engineer
+    const engineerB = serializedMembers.find(
+      (m) => m.engineerId === body.engineerBId
+    )?.engineer
+
+    await recordEvent(tx, {
+      action: "swap.created",
+      actorEmail: user.email as string,
+      summary: `Swapped shifts between ${
+        engineerA?.name ?? body.engineerAId
+      } and ${engineerB?.name ?? body.engineerBId} on "${rotation.name}"`,
+      rotationId: rotation.id,
+      rotationName: rotation.name,
     })
 
     return [createdA, createdB]

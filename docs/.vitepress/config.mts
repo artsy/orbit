@@ -25,6 +25,7 @@ export default defineConfig({
             link: "/managing-engineers",
           },
           { text: "Overrides & swaps", link: "/overrides-and-swaps" },
+          { text: "Event log", link: "/event-log" },
           { text: "Architecture", link: "/architecture" },
           { text: "Deployment", link: "/deployment" },
           { text: "Troubleshooting", link: "/troubleshooting" },

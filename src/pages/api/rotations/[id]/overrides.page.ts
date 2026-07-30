@@ -9,6 +9,7 @@ import {
   sendError,
 } from "utils/api/handler"
 import { serializeOverride } from "utils/api/serialize"
+import { recordEvent } from "utils/api/events"
 import { CreateOverrideBody, Override } from "rotations/types"
 
 export default async function handler(
@@ -79,6 +80,15 @@ export default async function handler(
           createdByEmail: user.email as string,
         },
         include: { replacementEngineer: true },
+      })
+      await recordEvent(prisma, {
+        action: "override.created",
+        actorEmail: user.email as string,
+        summary: `Added override for ${
+          override.replacementEngineer?.name ?? override.replacementEngineerId
+        } on "${rotation.name}"`,
+        rotationId: rotation.id,
+        rotationName: rotation.name,
       })
       return res.status(201).json(serializeOverride(override))
     }

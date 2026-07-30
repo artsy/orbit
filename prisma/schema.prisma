@@ -77,3 +77,23 @@ model Override {
   @@index([rotationId, startDate, endDate])
   @@index([swapGroupId])
 }
+
+// An append-only audit trail of mutations across the app (who did what,
+// when). Deliberately has no relations/FKs to Rotation/Engineer/Override —
+// those all cascade-delete aggressively, and history should survive the
+// thing it describes being deleted. `rotationId`/`rotationName` are a
+// denormalized snapshot for optional filtering/linking, not a foreign key.
+model Event {
+  id           String   @id @default(cuid())
+  // e.g. "rotation.created", "override.deleted" — see EventAction in utils/api/events.ts
+  action       String
+  // Human-readable one-liner, e.g. `Added override for Jane Doe on "Platform on-call"`
+  summary      String
+  actorEmail   String
+  rotationId   String?
+  rotationName String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([rotationId])
+}
