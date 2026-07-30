@@ -1,6 +1,6 @@
 import { Clickable, Flex, Stack, Text } from "@artsy/palette"
-import ArtsyMarkIcon from "@artsy/icons/ArtsyMarkIcon"
 import { signOut } from "next-auth/react"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/router"
 import { useThemeMode } from "system/ThemeMode"
@@ -49,7 +49,7 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
       <Stack flexDirection="row" gap={2} alignItems="center">
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>
           <Flex alignItems="center" gap={0.5}>
-            <ArtsyMarkIcon fill="mono0" width={24} height={24} />
+            <Image src="/logo.png" alt="" width={48} height={48} />
             <Text variant="lg-display">Orbit</Text>
           </Flex>
         </Link>

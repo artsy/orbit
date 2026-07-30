@@ -8,6 +8,7 @@ export default defineConfig({
   // Local dev URLs referenced in the guide aren't reachable at build time.
   ignoreDeadLinks: [/^https?:\/\/localhost/],
   themeConfig: {
+    logo: { light: "/logo-light.png", dark: "/logo-dark.png" },
     nav: [
       { text: "Guide", link: "/getting-started" },
       { text: "API", link: "/api-contract" },
