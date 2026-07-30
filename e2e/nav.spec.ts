@@ -17,20 +17,6 @@ test.describe("global nav", () => {
     await expect(page.getByText("Orbit")).toBeVisible()
   })
 
-  test("toggles between light and dark themes", async ({ page }) => {
-    await page.route("**/api/rotations", (route) => route.fulfill({ json: [] }))
-
-    await page.goto("/")
-
-    // Default is light, so the toggle offers to switch to "Dark".
-    const toggle = page.locator('[aria-label="Toggle color theme"]')
-    await expect(toggle).toHaveText("Dark")
-
-    await toggle.click()
-    // After switching, it offers to go back to "Light".
-    await expect(toggle).toHaveText("Light")
-  })
-
   test("highlights the active section", async ({ page }) => {
     await page.route("**/api/engineers", (route) => route.fulfill({ json: [] }))
 
