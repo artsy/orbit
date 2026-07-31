@@ -166,6 +166,7 @@ export default function EngineersPage() {
               name="slackUserId"
               title="Slack user ID"
               placeholder="e.g. U01427GSPK9 (for bot @mentions)"
+              description="In Slack, open the person's profile, click the ⋮ (more) button, then Copy member ID."
               value={values.slackUserId}
               onChange={handleChange}
               onBlur={handleBlur}
