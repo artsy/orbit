@@ -12,8 +12,9 @@ this rotation created?" without digging through Slack.
 links to `/events?rotationId=<id>` — a table, newest first, scoped to that
 rotation, showing the timestamp, the acting user's email, the action, and a
 one-line summary. There's no global, unfiltered view in the nav — events not
-tied to any rotation (`engineer.created`/`updated`/`deleted`) aren't reachable
-from the UI, only via the API below.
+tied to any rotation (`engineer.created`/`updated`/`deleted`, and all of the
+`team.*`/`team-membership.updated` actions, since a Team has no relation to
+any Rotation) aren't reachable from the UI, only via the API below.
 
 ## What gets recorded
 
@@ -32,6 +33,10 @@ Every write action across the app records one entry:
 | `override.updated` | Editing an override |
 | `override.deleted` | Deleting an override |
 | `swap.created` | Swapping two engineers' shifts (one entry for the pair, not two) |
+| `team.created` | Creating a team |
+| `team.updated` | Renaming a team |
+| `team.deleted` | Deleting a team |
+| `team-membership.updated` | Changing a team's roster |
 
 The acting user's **email** is always the identity recorded — the same
 `user.email` that authenticates the request, matching the convention already

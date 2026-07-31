@@ -46,7 +46,12 @@ const memberFor = (engineerId: string, position: number) => ({
 
 async function mockRotationPage(
   page: Page,
-  init: { members?: any[]; overrides?: any[]; entries?: any[] }
+  init: {
+    members?: any[]
+    overrides?: any[]
+    entries?: any[]
+    teams?: any[]
+  }
 ) {
   const state = {
     members: init.members ?? [],
@@ -59,6 +64,9 @@ async function mockRotationPage(
   await page.route("**/api/rotations/rot-1/schedule**", (r) =>
     r.fulfill({ json: { rotation, members: state.members, entries: state.entries } })
   )
+  // The "Add a team" picker calls useTeams() unconditionally; default to none
+  // so tests that don't care about Teams don't hit the real API.
+  await page.route("**/api/teams", (r) => r.fulfill({ json: init.teams ?? [] }))
 
   await page.route("**/api/rotations/rot-1/members", async (route) => {
     if (route.request().method() === "PUT") {
@@ -473,5 +481,34 @@ test.describe("rotation management", () => {
     await expect(
       editModal.getByRole("button", { name: "Save changes" })
     ).toBeVisible()
+  })
+
+  test("adds a full team to the on-call order", async ({ page }) => {
+    const team = { id: "team-1", name: "Backend", createdAt: "2026-01-01T00:00:00.000Z" }
+
+    await mockRotationPage(page, { members: [memberFor("e3", 0)], teams: [team] })
+    await page.route("**/api/teams/team-1/members", (route) =>
+      route.fulfill({
+        json: [
+          { id: "tm-1", teamId: "team-1", engineerId: "e1", engineer: engineersById.e1 },
+          { id: "tm-2", teamId: "team-1", engineerId: "e2", engineer: engineersById.e2 },
+        ],
+      })
+    )
+
+    await page.goto("/rotations/rot-1")
+
+    await expect(page.getByText("Test User")).toBeVisible()
+
+    // Two comboboxes now render in the members editor — "Add engineer" first,
+    // then "Add a team" (palette's Select doesn't expose an accessible name).
+    await page.getByRole("combobox").nth(1).selectOption({ label: "Backend" })
+    await page.getByRole("button", { name: "Add team" }).click()
+
+    // Both of the team's engineers land in the on-call order, alongside the
+    // engineer who was already a member.
+    await expect(page.getByText("Ada Lovelace")).toBeVisible()
+    await expect(page.getByText("Grace Hopper")).toBeVisible()
+    await expect(page.getByText("Test User")).toBeVisible()
   })
 })

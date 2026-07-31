@@ -21,8 +21,33 @@ model Engineer {
   createdAt     DateTime @default(now())
 
   memberships          RotationMember[]
+  teamMemberships      TeamMember[]
   replacementOverrides Override[]       @relation("ReplacementEngineer")
   originalOverrides    Override[]       @relation("OriginalEngineer")
+}
+
+// A named group of engineers (e.g. "Frontend"), independent of any rotation —
+// used purely as a convenience for bulk-adding its members to a rotation's
+// on-call order. Membership is unordered (unlike RotationMember, which has a
+// `position`), and there's no relation to Rotation: adding a team creates
+// ordinary RotationMember rows with no lasting link back to the team.
+model Team {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  members TeamMember[]
+}
+
+model TeamMember {
+  id         String @id @default(cuid())
+  teamId     String
+  engineerId String
+
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  engineer Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, engineerId])
 }
 
 model Rotation {

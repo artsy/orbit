@@ -18,6 +18,10 @@ export type EventAction =
   | "override.updated"
   | "override.deleted"
   | "swap.created"
+  | "team.created"
+  | "team.updated"
+  | "team.deleted"
+  | "team-membership.updated"
 
 export interface RecordEventParams {
   action: EventAction

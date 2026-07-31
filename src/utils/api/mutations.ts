@@ -9,14 +9,19 @@ import {
   CreateOverrideBody,
   CreateRotationBody,
   CreateSwapBody,
+  CreateTeamBody,
   Engineer,
   Override,
   Rotation,
   RotationMember,
   SetMembersBody,
+  SetTeamMembersBody,
+  Team,
+  TeamMember,
   UpdateEngineerBody,
   UpdateOverrideBody,
   UpdateRotationBody,
+  UpdateTeamBody,
 } from "rotations/types"
 
 async function request<T>(
@@ -135,6 +140,39 @@ export async function createSwap(
 ): Promise<Override[]> {
   return request<Override[]>(`/api/rotations/${rotationId}/swaps`, {
     method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export async function createTeam(body: CreateTeamBody): Promise<Team> {
+  return request<Team>("/api/teams", {
+    method: "POST",
+    body: JSON.stringify(body),
+  })
+}
+
+export async function updateTeam(
+  id: string,
+  body: UpdateTeamBody
+): Promise<Team> {
+  return request<Team>(`/api/teams/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteTeam(id: string): Promise<Team> {
+  return request<Team>(`/api/teams/${id}`, {
+    method: "DELETE",
+  })
+}
+
+export async function setTeamMembers(
+  teamId: string,
+  body: SetTeamMembersBody
+): Promise<TeamMember[]> {
+  return request<TeamMember[]>(`/api/teams/${teamId}/members`, {
+    method: "PUT",
     body: JSON.stringify(body),
   })
 }
