@@ -4,13 +4,16 @@ title: Event log
 
 # Event log
 
-The Event Log is a running history of operations across Orbit — who did what,
+The Event Log is a running history of operations on a rotation — who did what,
 and when. It's useful for answering "who added that override?" or "when was
 this rotation created?" without digging through Slack.
 
-**In the UI:** go to **`/events`**. It's a table, newest first, showing the
-timestamp, the acting user's email, the action, the rotation involved (if any,
-linking back to it), and a one-line summary.
+**In the UI:** open a rotation (`/rotations/[id]`) and click **Event log**. It
+links to `/events?rotationId=<id>` — a table, newest first, scoped to that
+rotation, showing the timestamp, the acting user's email, the action, and a
+one-line summary. There's no global, unfiltered view in the nav — events not
+tied to any rotation (`engineer.created`/`updated`/`deleted`) aren't reachable
+from the UI, only via the API below.
 
 ## What gets recorded
 
