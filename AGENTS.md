@@ -13,6 +13,7 @@ Full documentation lives in [`docs/`](docs/) and is published to
 - **Run locally:** `yarn install` → `cp .env.example .env.local` (fill in Gravity + `NEXTAUTH_SECRET`) → `yarn db:up` → `yarn prisma:migrate` → `yarn seed` → `yarn dev`. Artsy engineers can replace the first two steps with `yarn setup:artsy` (installs deps + pulls `.env.local` from Citadel). Full steps: [docs/getting-started.md](docs/getting-started.md).
 - **Add / remove an engineer:** manage person records on the `/engineers` page (add, or soft-deactivate). Putting an engineer on-call means adding them to a rotation's ordered membership (`PUT /api/rotations/[id]/members`). See [docs/managing-engineers.md](docs/managing-engineers.md).
 - **Add an override / swap shifts:** use the buttons on `/rotations/[id]`, or the `overrides` / `swaps` endpoints. See [docs/overrides-and-swaps.md](docs/overrides-and-swaps.md).
+- **Group engineers into a team:** manage rosters on `/teams` / `/teams/[id]`. A rotation's "Add a team" button bulk-adds a team's roster to its on-call order — a team has no lasting link to any rotation. See [docs/teams.md](docs/teams.md).
 - **Auth:** Artsy/Gravity OAuth; the `team` role is required to sign in and to write.
 
 ## Repository map
@@ -69,4 +70,16 @@ interaction, a drag, an animation, a modal sequence — record a short screen
 capture instead. Skip this for backend-only or non-visual changes.
 
 Drive the running app with Playwright or the Chrome DevTools MCP tools to
-capture these rather than describing the UI in prose.
+capture these rather than describing the UI in prose. Run the app for real
+(`yarn dev`) against seeded local data — don't settle for a mocked e2e page as
+a substitute for an actual screenshot.
+
+Signed-in pages need a real Gravity session, which an agent can't complete
+non-interactively. **Ask the user to sign in** in the browser tab being
+driven, then continue capturing once they confirm — don't skip the
+screenshots/recording section just because auth is in the way.
+
+To keep an embedded image working after a PR's branch is deleted on merge,
+host it on a small dedicated `screenshots/pr-<number>` branch (pushed, and
+deliberately never deleted) rather than the PR's own feature branch, and
+reference it via a `raw.githubusercontent.com` URL.

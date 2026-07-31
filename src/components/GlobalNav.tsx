@@ -37,7 +37,7 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
   const rotationsActive =
     router.pathname === "/" || router.pathname.startsWith("/rotations")
   const engineersActive = router.pathname.startsWith("/engineers")
-  const eventsActive = router.pathname.startsWith("/events")
+  const teamsActive = router.pathname.startsWith("/teams")
 
   return (
     <Flex
@@ -71,11 +71,7 @@ export const GlobalNav: React.FC<GlobalNavProps> = ({ user }) => {
               active={engineersActive}
               label="Engineers"
             />
-            <NavLink
-              href="/events"
-              active={eventsActive}
-              label="Event log"
-            />
+            <NavLink href="/teams" active={teamsActive} label="Teams" />
           </>
         )}
       </Stack>

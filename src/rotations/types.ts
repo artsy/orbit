@@ -45,6 +45,25 @@ export interface RotationMember {
   engineer?: Engineer
 }
 
+/**
+ * A named group of engineers, independent of any rotation — a convenience
+ * for bulk-adding its members to a rotation's on-call order. See /teams.
+ */
+export interface Team {
+  id: string
+  name: string
+  createdAt: string
+}
+
+/** Membership in a Team. Unlike RotationMember, this is unordered. */
+export interface TeamMember {
+  id: string
+  teamId: string
+  engineerId: string
+  /** Optionally populated by the API for convenience. */
+  engineer?: Engineer
+}
+
 export interface Override {
   id: string
   rotationId: string
@@ -143,6 +162,17 @@ export type UpdateRotationBody = Partial<CreateRotationBody>
 
 /** Replace the full ordered membership of a rotation. `engineerIds[i]` gets position `i`. */
 export interface SetMembersBody {
+  engineerIds: string[]
+}
+
+export interface CreateTeamBody {
+  name: string
+}
+
+export type UpdateTeamBody = Partial<CreateTeamBody>
+
+/** Replace a team's full (unordered) roster. */
+export interface SetTeamMembersBody {
   engineerIds: string[]
 }
 

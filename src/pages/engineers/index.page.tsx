@@ -11,6 +11,7 @@ import {
 import { Form, Formik } from "formik"
 import { useCallback, useEffect, useState } from "react"
 import * as Yup from "yup"
+import { EditEngineerModal } from "components/engineers/EditEngineerModal"
 import { Engineer } from "rotations/types"
 import { createEngineer, deleteEngineer } from "utils/api/mutations"
 
@@ -31,6 +32,7 @@ export default function EngineersPage() {
   const [engineers, setEngineers] = useState<Engineer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Engineer | null>(null)
   const { sendToast } = useToasts()
 
   const loadEngineers = useCallback(async () => {
@@ -164,6 +166,7 @@ export default function EngineersPage() {
               name="slackUserId"
               title="Slack user ID"
               placeholder="e.g. U01427GSPK9 (for bot @mentions)"
+              description="In Slack, open the person's profile, click the ⋮ (more) button, then Copy member ID."
               value={values.slackUserId}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -230,6 +233,14 @@ export default function EngineersPage() {
 
                 <Button
                   size="small"
+                  variant="secondaryBlack"
+                  onClick={() => setEditing(engineer)}
+                >
+                  Edit
+                </Button>
+
+                <Button
+                  size="small"
                   variant="secondaryNeutral"
                   onClick={() => handleDelete(engineer)}
                   loading={deletingId === engineer.id}
@@ -241,6 +252,15 @@ export default function EngineersPage() {
             </Flex>
           ))}
         </Box>
+      )}
+
+      {editing && (
+        <EditEngineerModal
+          engineer={editing}
+          isOpen
+          onClose={() => setEditing(null)}
+          onDone={loadEngineers}
+        />
       )}
     </Box>
   )

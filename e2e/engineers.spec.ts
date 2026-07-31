@@ -94,4 +94,69 @@ test.describe("engineers", () => {
     await expect(page.getByText("Ada Lovelace", { exact: true })).toBeVisible()
     expect(deletedId).toBe("e2")
   })
+
+  test("edits an engineer", async ({ page }) => {
+    let engineer = {
+      id: "e1",
+      name: "Ada Lovelace",
+      email: "ada@artsymail.com",
+      slackUserId: null as string | null,
+      active: true,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    }
+
+    let patchedBody: any = null
+
+    await page.route("**/api/engineers", (route) =>
+      route.fulfill({ json: [engineer] })
+    )
+    await page.route("**/api/engineers/*", (route) => {
+      if (route.request().method() === "PATCH") {
+        patchedBody = route.request().postDataJSON()
+        engineer = { ...engineer, ...patchedBody }
+        return route.fulfill({ json: engineer })
+      }
+      return route.fallback()
+    })
+
+    await page.goto("/engineers")
+
+    await expect(page.getByText("Ada Lovelace", { exact: true })).toBeVisible()
+
+    await page
+      .getByTestId("engineer-row-e1")
+      .getByRole("button", { name: "Edit" })
+      .click()
+
+    const modal = page.getByRole("dialog").filter({ hasText: "Edit engineer" })
+    await expect(modal).toBeVisible()
+    await expect(modal.locator('input[name="name"]')).toHaveValue(
+      "Ada Lovelace"
+    )
+    await expect(modal.locator('input[name="email"]')).toHaveValue(
+      "ada@artsymail.com"
+    )
+
+    await modal.locator('input[name="name"]').fill("Ada K. Lovelace")
+    await modal.locator('input[name="slackUserId"]').fill("U0ADA123")
+    await modal.getByRole("checkbox", { name: "Active" }).click()
+
+    await modal.getByRole("button", { name: "Save changes" }).click()
+
+    await expect(modal).not.toBeVisible()
+
+    expect(patchedBody).toEqual({
+      name: "Ada K. Lovelace",
+      email: "ada@artsymail.com",
+      slackUserId: "U0ADA123",
+      active: false,
+    })
+
+    await expect(
+      page.getByText("Ada K. Lovelace", { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByTestId("engineer-row-e1").getByText("Inactive")
+    ).toBeVisible()
+  })
 })

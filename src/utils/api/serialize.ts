@@ -13,6 +13,8 @@ import type {
   Override as PrismaOverride,
   Rotation as PrismaRotation,
   RotationMember as PrismaRotationMember,
+  Team as PrismaTeam,
+  TeamMember as PrismaTeamMember,
 } from "@prisma/client"
 
 import {
@@ -21,6 +23,8 @@ import {
   Override,
   Rotation,
   RotationMember,
+  Team,
+  TeamMember,
 } from "rotations/types"
 
 export function serializeEngineer(engineer: PrismaEngineer): Engineer {
@@ -75,6 +79,25 @@ export function serializeOverride(
     replacementEngineer: override.replacementEngineer
       ? serializeEngineer(override.replacementEngineer)
       : undefined,
+  }
+}
+
+export function serializeTeam(team: PrismaTeam): Team {
+  return {
+    id: team.id,
+    name: team.name,
+    createdAt: team.createdAt.toISOString(),
+  }
+}
+
+export function serializeTeamMember(
+  member: PrismaTeamMember & { engineer?: PrismaEngineer }
+): TeamMember {
+  return {
+    id: member.id,
+    teamId: member.teamId,
+    engineerId: member.engineerId,
+    engineer: member.engineer ? serializeEngineer(member.engineer) : undefined,
   }
 }
 

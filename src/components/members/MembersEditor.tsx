@@ -8,7 +8,7 @@ import {
   useToasts,
 } from "@artsy/palette"
 import { FC, useMemo, useState } from "react"
-import { useEngineers, useMembers } from "utils/hooks/useApi"
+import { useEngineers, useMembers, useTeamMembers, useTeams } from "utils/hooks/useApi"
 import { setMembers } from "utils/api/mutations"
 
 interface MembersEditorProps {
@@ -31,6 +31,9 @@ export const MembersEditor: FC<MembersEditorProps> = ({
 
   const [saving, setSaving] = useState(false)
   const [toAdd, setToAdd] = useState("")
+  const [toAddTeam, setToAddTeam] = useState("")
+  const { data: teams } = useTeams()
+  const { data: teamMembers } = useTeamMembers(toAddTeam || undefined)
 
   // Members are returned ordered by position.
   const orderedIds = useMemo(
@@ -87,6 +90,23 @@ export const MembersEditor: FC<MembersEditorProps> = ({
     if (!toAdd) return
     apply([...orderedIds, toAdd])
     setToAdd("")
+  }
+
+  const teamOptions = useMemo(
+    () => (teams ?? []).map((team) => ({ value: team.id, text: team.name })),
+    [teams]
+  )
+
+  const addTeam = () => {
+    if (!toAddTeam || !teamMembers) return
+    const existing = new Set(orderedIds)
+    // Match the individual "Add engineer" picker, which only ever offers
+    // active engineers — a deactivated teammate isn't silently added.
+    const newIds = teamMembers
+      .filter((m) => m.engineer?.active && !existing.has(m.engineerId))
+      .map((m) => m.engineerId)
+    apply([...orderedIds, ...newIds])
+    setToAddTeam("")
   }
 
   return (
@@ -176,6 +196,27 @@ export const MembersEditor: FC<MembersEditorProps> = ({
             disabled={saving || !toAdd}
           >
             Add
+          </Button>
+        </Flex>
+      )}
+
+      {teamOptions.length > 0 && (
+        <Flex gap={1} mt={1} alignItems="flex-end" maxWidth={400}>
+          <Box flex={1}>
+            <Select
+              title="Add a team"
+              options={[{ value: "", text: "Select a team…" }, ...teamOptions]}
+              selected={toAddTeam}
+              onSelect={setToAddTeam}
+            />
+          </Box>
+          <Button
+            size="small"
+            variant="secondaryBlack"
+            onClick={addTeam}
+            disabled={saving || !toAddTeam || !teamMembers}
+          >
+            Add team
           </Button>
         </Flex>
       )}

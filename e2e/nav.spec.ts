@@ -29,22 +29,4 @@ test.describe("global nav", () => {
       .first()
     await expect(engineersText).toHaveCSS("text-decoration-line", "underline")
   })
-
-  test("links to the Event Log and highlights it when active", async ({
-    page,
-  }) => {
-    await page.route("**/api/rotations", (route) => route.fulfill({ json: [] }))
-    await page.route("**/api/events", (route) => route.fulfill({ json: [] }))
-
-    await page.goto("/")
-
-    const eventLogLink = page.getByRole("link", { name: "Event log" })
-    await expect(eventLogLink).toBeVisible()
-
-    await eventLogLink.click()
-    await expect(page).toHaveURL("/events")
-
-    const eventLogText = eventLogLink.locator("> *").first()
-    await expect(eventLogText).toHaveCSS("text-decoration-line", "underline")
-  })
 })

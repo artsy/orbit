@@ -55,8 +55,8 @@ export default async function handler(
 
       // Hard delete. Remove dependent rows first to avoid FK violations:
       // overrides this engineer covers are dropped, the originalEngineer
-      // snapshot is nulled where it pointed at them, and their rotation
-      // memberships are removed.
+      // snapshot is nulled where it pointed at them, and their rotation and
+      // team memberships are removed.
       const engineer = await prisma.$transaction(async (tx) => {
         await tx.override.deleteMany({ where: { replacementEngineerId: id } })
         await tx.override.updateMany({
@@ -64,6 +64,7 @@ export default async function handler(
           data: { originalEngineerId: null },
         })
         await tx.rotationMember.deleteMany({ where: { engineerId: id } })
+        await tx.teamMember.deleteMany({ where: { engineerId: id } })
         const deleted = await tx.engineer.delete({ where: { id } })
 
         await recordEvent(tx, {

@@ -6,6 +6,8 @@ import {
   Rotation,
   RotationMember,
   ScheduleResponse,
+  Team,
+  TeamMember,
 } from "rotations/types"
 
 export const fetcher = async (url: string) => {
@@ -61,4 +63,19 @@ export const useEvents = (rotationId?: string) => {
     : "/api/events"
 
   return useSWR<EventLogEntry[]>(key, fetcher)
+}
+
+export const useTeams = () => {
+  return useSWR<Team[]>("/api/teams", fetcher)
+}
+
+export const useTeam = (id?: string) => {
+  return useSWR<Team>(id ? `/api/teams/${id}` : null, fetcher)
+}
+
+export const useTeamMembers = (teamId?: string) => {
+  return useSWR<TeamMember[]>(
+    teamId ? `/api/teams/${teamId}/members` : null,
+    fetcher
+  )
 }

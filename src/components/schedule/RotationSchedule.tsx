@@ -13,6 +13,7 @@ import { addDays, formatISO, parseISO } from "date-fns"
 import { useSWRConfig } from "swr"
 import { useSession } from "next-auth/react"
 import dynamic from "next/dynamic"
+import Link from "next/link"
 import { FC, useMemo, useState } from "react"
 import { Engineer, Override, ScheduleEntry } from "rotations/types"
 import {
@@ -277,6 +278,12 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         <Button variant="secondaryBlack" onClick={() => setEditOpen(true)}>
           Edit rotation
         </Button>
+        <Link
+          href={`/events?rotationId=${rotationId}`}
+          style={{ textDecoration: "none" }}
+        >
+          <Button variant="secondaryBlack">Event log</Button>
+        </Link>
       </Flex>
 
       <EditRotationModal

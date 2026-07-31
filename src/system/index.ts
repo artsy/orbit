@@ -38,6 +38,10 @@ const PERMISSIONS: Record<string, Partial<Record<Action, Role[]>>> = {
     [Action.read]: [Role.team, Role.service],
     [Action.manage]: [Role.team],
   },
+  teams: {
+    [Action.read]: [Role.team, Role.service],
+    [Action.manage]: [Role.team],
+  },
   // Nothing writes to the Event Log directly — entries are a side effect of
   // the domains above, so there's no `manage` action to grant here.
   events: {

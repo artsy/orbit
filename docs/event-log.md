@@ -4,13 +4,17 @@ title: Event log
 
 # Event log
 
-The Event Log is a running history of operations across Orbit — who did what,
+The Event Log is a running history of operations on a rotation — who did what,
 and when. It's useful for answering "who added that override?" or "when was
 this rotation created?" without digging through Slack.
 
-**In the UI:** go to **`/events`**. It's a table, newest first, showing the
-timestamp, the acting user's email, the action, the rotation involved (if any,
-linking back to it), and a one-line summary.
+**In the UI:** open a rotation (`/rotations/[id]`) and click **Event log**. It
+links to `/events?rotationId=<id>` — a table, newest first, scoped to that
+rotation, showing the timestamp, the acting user's email, the action, and a
+one-line summary. There's no global, unfiltered view in the nav — events not
+tied to any rotation (`engineer.created`/`updated`/`deleted`, and all of the
+`team.*`/`team-membership.updated` actions, since a Team has no relation to
+any Rotation) aren't reachable from the UI, only via the API below.
 
 ## What gets recorded
 
@@ -29,6 +33,10 @@ Every write action across the app records one entry:
 | `override.updated` | Editing an override |
 | `override.deleted` | Deleting an override |
 | `swap.created` | Swapping two engineers' shifts (one entry for the pair, not two) |
+| `team.created` | Creating a team |
+| `team.updated` | Renaming a team |
+| `team.deleted` | Deleting a team |
+| `team-membership.updated` | Changing a team's roster |
 
 The acting user's **email** is always the identity recorded — the same
 `user.email` that authenticates the request, matching the convention already

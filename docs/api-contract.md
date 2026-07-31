@@ -25,8 +25,10 @@ on missing resource `404 { error }`.
 | DELETE | `/api/engineers/[id]` | — | `Engineer` (hard-deletes; also removes their memberships and covering overrides) |
 
 An `Engineer` has an optional `slackUserId` (the Slack user ID, for bot
-`@mentions` — stable across handle changes); `CreateEngineerBody` /
-`UpdateEngineerBody` accept it.
+`@mentions` — stable across handle changes) and an `active` flag (inactive
+engineers are skipped when computing a rotation's schedule); `CreateEngineerBody`
+/ `UpdateEngineerBody` accept both. `PATCH` applies a partial update — only the
+fields present in the body change.
 
 ## Rotations — domain `rotations`
 
@@ -90,6 +92,25 @@ compute `entries`.
 The `/swaps` handler uses `buildSwap` from the logic module to compute the two
 override payloads, generates a shared `swapGroupId`, and persists both in a
 transaction.
+
+## Teams — domain `teams`
+
+| Method | Route | Body | Response |
+|---|---|---|---|
+| GET | `/api/teams` | — | `Team[]` |
+| POST | `/api/teams` | `CreateTeamBody` | `Team` (201) |
+| GET | `/api/teams/[id]` | — | `Team` |
+| PATCH | `/api/teams/[id]` | `UpdateTeamBody` | `Team` |
+| DELETE | `/api/teams/[id]` | — | `Team` (also removes its roster) |
+| GET | `/api/teams/[id]/members` | — | `TeamMember[]` (`engineer` populated) |
+| PUT | `/api/teams/[id]/members` | `SetTeamMembersBody` | `TeamMember[]` (replaces the full, unordered roster) |
+
+A `Team` is independent of any `Rotation` — it's purely a convenience for
+bulk-adding its roster to a rotation's membership (see
+[Teams](./teams.md#add-a-full-team-to-a-rotation)). There's no dedicated
+endpoint for that; the client merges a team's `engineerId`s into a rotation's
+existing membership and calls the same
+`PUT /api/rotations/[id]/members` described above.
 
 ## Event log — domain `events`
 
