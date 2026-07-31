@@ -26,8 +26,8 @@ Relay/Metaphysics layer.
 | `src/pages/api/` | REST endpoints (see the [API contract](./api-contract.md)), backed by Prisma. |
 | `src/system/` | RBAC (`Role`, `isPermitted`, `assertPermitted`) and app boot. |
 | `src/components/` | Palette UI — the schedule view and the override/swap forms. |
-| `src/pages/` | Routes: home, `/rotations/[id]`, `/engineers`, `/events`. |
-| `prisma/schema.prisma` | Data model: `Engineer`, `Rotation`, `RotationMember`, `Override`, `Event`. |
+| `src/pages/` | Routes: home, `/rotations/[id]`, `/engineers`, `/teams`, `/teams/[id]`, `/events`. |
+| `prisma/schema.prisma` | Data model: `Engineer`, `Rotation`, `RotationMember`, `Override`, `Event`, `Team`, `TeamMember`. |
 
 ## The rotation model
 
