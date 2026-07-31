@@ -69,4 +69,16 @@ interaction, a drag, an animation, a modal sequence — record a short screen
 capture instead. Skip this for backend-only or non-visual changes.
 
 Drive the running app with Playwright or the Chrome DevTools MCP tools to
-capture these rather than describing the UI in prose.
+capture these rather than describing the UI in prose. Run the app for real
+(`yarn dev`) against seeded local data — don't settle for a mocked e2e page as
+a substitute for an actual screenshot.
+
+Signed-in pages need a real Gravity session, which an agent can't complete
+non-interactively. **Ask the user to sign in** in the browser tab being
+driven, then continue capturing once they confirm — don't skip the
+screenshots/recording section just because auth is in the way.
+
+To keep an embedded image working after a PR's branch is deleted on merge,
+host it on a small dedicated `screenshots/pr-<number>` branch (pushed, and
+deliberately never deleted) rather than the PR's own feature branch, and
+reference it via a `raw.githubusercontent.com` URL.
