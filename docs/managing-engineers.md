@@ -39,6 +39,9 @@ curl -X POST http://localhost:3000/api/engineers \
 engineer — stable even if they change their handle) is optional and can be
 updated later via `PATCH /api/engineers/[id]`.
 
+**Finding someone's Slack user ID:** in Slack, open their profile, click the
+**⋮** (more) button, then **Copy member ID**.
+
 ## Edit an engineer
 
 **In the UI:** on **`/engineers`**, click **Edit** next to the person to open a
