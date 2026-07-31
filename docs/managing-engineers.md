@@ -39,6 +39,30 @@ curl -X POST http://localhost:3000/api/engineers \
 engineer — stable even if they change their handle) is optional and can be
 updated later via `PATCH /api/engineers/[id]`.
 
+## Edit an engineer
+
+**In the UI:** on **`/engineers`**, click **Edit** next to the person to open a
+form for their name, email, Slack user ID, and **Active** state. Save applies
+the change immediately.
+
+**Via the API:**
+
+```sh
+curl -X PATCH http://localhost:3000/api/engineers/<engineerId> \
+  -H "Content-Type: application/json" \
+  -H "Cookie: <your-session-cookie>" \
+  -d '{ "name": "Ada K. Lovelace", "slackUserId": "U01427GSPK9" }'
+```
+
+Only the fields you send are changed — omit a field to leave it as-is.
+
+### Deactivate vs. delete
+
+Unchecking **Active** is usually the better choice over deleting: an inactive
+engineer is **skipped when computing the schedule** for any rotation they're a
+member of, but their record, history, and past event log entries are kept.
+Deleting is **permanent** — see below.
+
 ## Delete an engineer
 
 Deleting an engineer **permanently removes** them. Their rotation memberships

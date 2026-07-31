@@ -25,8 +25,10 @@ on missing resource `404 { error }`.
 | DELETE | `/api/engineers/[id]` | — | `Engineer` (hard-deletes; also removes their memberships and covering overrides) |
 
 An `Engineer` has an optional `slackUserId` (the Slack user ID, for bot
-`@mentions` — stable across handle changes); `CreateEngineerBody` /
-`UpdateEngineerBody` accept it.
+`@mentions` — stable across handle changes) and an `active` flag (inactive
+engineers are skipped when computing a rotation's schedule); `CreateEngineerBody`
+/ `UpdateEngineerBody` accept both. `PATCH` applies a partial update — only the
+fields present in the body change.
 
 ## Rotations — domain `rotations`
 
