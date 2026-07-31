@@ -146,6 +146,33 @@ test.describe("rotation management", () => {
     expect(patched?.name).toBe("Platform & Infra")
   })
 
+  test("opens this rotation's event log", async ({ page }) => {
+    await mockRotationPage(page, { members: [] })
+    await page.route("**/api/events*", (route) =>
+      route.fulfill({
+        json: [
+          {
+            id: "evt-1",
+            action: "rotation.created",
+            summary: 'Created rotation "Platform on-call"',
+            actorEmail: "ada@artsymail.com",
+            rotationId: "rot-1",
+            rotationName: "Platform on-call",
+            createdAt: "2026-01-01T09:00:00.000Z",
+          },
+        ],
+      })
+    )
+
+    await page.goto("/rotations/rot-1")
+
+    await page.getByRole("button", { name: "Event log" }).click()
+
+    await expect(page).toHaveURL("/events?rotationId=rot-1")
+    await expect(page.getByText("Event log — Platform on-call")).toBeVisible()
+    await expect(page.getByText("Rotation created")).toBeVisible()
+  })
+
   test("renders the on-call calendar", async ({ page }) => {
     await mockRotationPage(page, { members: [memberFor("e1", 0)] })
 
