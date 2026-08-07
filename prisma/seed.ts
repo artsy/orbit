@@ -29,10 +29,22 @@ async function main() {
   await prisma.engineer.deleteMany()
 
   // --- Engineers -------------------------------------------------------------
+  // A couple have a chosen color/pattern so the calendar demonstrates the
+  // effect right after seeding; the rest are left on "Auto" (hashed default).
   const engineerSeeds = [
-    { name: "Ada Lovelace", email: "ada@artsymail.com" },
+    {
+      name: "Ada Lovelace",
+      email: "ada@artsymail.com",
+      color: "#6E56CF",
+      pattern: "sparkles",
+    },
     { name: "Grace Hopper", email: "grace@artsymail.com" },
-    { name: "Alan Turing", email: "alan@artsymail.com" },
+    {
+      name: "Alan Turing",
+      email: "alan@artsymail.com",
+      color: "#0091FF",
+      pattern: "shimmer",
+    },
     { name: "Katherine Johnson", email: "katherine@artsymail.com" },
     { name: "Margaret Hamilton", email: "margaret@artsymail.com" },
   ]
@@ -152,15 +164,51 @@ async function main() {
   // period 0 = the first captain. `slackUserId` is what a Slack bot needs to
   // @mention the on-call captain (the handle is display-only).
   const releaseCaptainSeeds = [
-    { name: "Sultan Al-Maari", email: "Sultan.Al-Maari@artsymail.com", slackUserId: "U02CNMURE7R" },
-    { name: "George Kartalis", email: "George.Kartalis@artsymail.com", slackUserId: "U023RJ49TUN" },
-    { name: "Brian Beckerle", email: "brian.beckerle@artsymail.com", slackUserId: "URE5S7BBN" },
-    { name: "Mounir Dhahri", email: "Mounir.Dhahri@artsymail.com", slackUserId: "U01427GSPK9" },
-    { name: "Daria Kozlova", email: "Daria.Kozlova@artsymail.com", slackUserId: "U02HAF8J1QV" },
-    { name: "Carlos", email: "carlos@artsymail.com", slackUserId: "U02DTPDPGTA" },
-    { name: "Adam Iskounen", email: "adam.iskounen@artsymail.com", slackUserId: "UDQF9AV09" },
-    { name: "Janae Edwards", email: "janae.edwards@artsymail.com", slackUserId: "UBDKQ4S0J" },
-    { name: "Ole Richter", email: "ole.richter@artsymail.com", slackUserId: "U01RRGTBMU3" },
+    {
+      name: "Sultan Al-Maari",
+      email: "Sultan.Al-Maari@artsymail.com",
+      slackUserId: "U02CNMURE7R",
+    },
+    {
+      name: "George Kartalis",
+      email: "George.Kartalis@artsymail.com",
+      slackUserId: "U023RJ49TUN",
+    },
+    {
+      name: "Brian Beckerle",
+      email: "brian.beckerle@artsymail.com",
+      slackUserId: "URE5S7BBN",
+    },
+    {
+      name: "Mounir Dhahri",
+      email: "Mounir.Dhahri@artsymail.com",
+      slackUserId: "U01427GSPK9",
+    },
+    {
+      name: "Daria Kozlova",
+      email: "Daria.Kozlova@artsymail.com",
+      slackUserId: "U02HAF8J1QV",
+    },
+    {
+      name: "Carlos",
+      email: "carlos@artsymail.com",
+      slackUserId: "U02DTPDPGTA",
+    },
+    {
+      name: "Adam Iskounen",
+      email: "adam.iskounen@artsymail.com",
+      slackUserId: "UDQF9AV09",
+    },
+    {
+      name: "Janae Edwards",
+      email: "janae.edwards@artsymail.com",
+      slackUserId: "UBDKQ4S0J",
+    },
+    {
+      name: "Ole Richter",
+      email: "ole.richter@artsymail.com",
+      slackUserId: "U01RRGTBMU3",
+    },
   ]
 
   const releaseCaptains = []
@@ -188,18 +236,30 @@ async function main() {
   })
 
   console.log("Seed complete:")
-  console.log(`  - ${engineers.length} engineers (${engineers.map((e) => e.name).join(", ")})`)
-  console.log(`  - 1 rotation: "${rotation.name}" (cadence ${rotation.cadenceDays}d, anchor ${rotation.anchorDate.toISOString()})`)
-  console.log(`  - ${engineers.length} rotation members, positions 0-${engineers.length - 1}`)
-  console.log(`  - 1 override: ${grace.name} covers ${ada.name} (${override.startDate.toISOString()} - ${override.endDate.toISOString()})`)
-  console.log(`  - 1 swap (swapGroupId=${swapGroupId}): ${alan.name} <-> ${katherine.name}, ${swapOverrides.length} reciprocal overrides`)
+  console.log(
+    `  - ${engineers.length} engineers (${engineers.map((e) => e.name).join(", ")})`
+  )
+  console.log(
+    `  - 1 rotation: "${rotation.name}" (cadence ${rotation.cadenceDays}d, anchor ${rotation.anchorDate.toISOString()})`
+  )
+  console.log(
+    `  - ${engineers.length} rotation members, positions 0-${engineers.length - 1}`
+  )
+  console.log(
+    `  - 1 override: ${grace.name} covers ${ada.name} (${override.startDate.toISOString()} - ${override.endDate.toISOString()})`
+  )
+  console.log(
+    `  - 1 swap (swapGroupId=${swapGroupId}): ${alan.name} <-> ${katherine.name}, ${swapOverrides.length} reciprocal overrides`
+  )
   console.log(`  - ${margaret.name} remains on the unmodified base round-robin`)
   console.log(
     `  - 1 rotation: "${releaseRotation.name}" (biweekly), ${releaseCaptains.length} captains: ${releaseCaptains
       .map((e) => e.name)
       .join(", ")}`
   )
-  console.log(`  - 3 event log entries (rotation created, override created, swap created)`)
+  console.log(
+    `  - 3 event log entries (rotation created, override created, swap created)`
+  )
 }
 
 main()

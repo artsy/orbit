@@ -127,4 +127,64 @@ describe("/api/engineers/[id]", () => {
       }),
     })
   })
+
+  it("updates the color and pattern on PATCH", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockFindUnique.mockResolvedValue(ENGINEER)
+    mockUpdate.mockResolvedValue({
+      ...ENGINEER,
+      color: "#30A46C",
+      pattern: "glow",
+    })
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "PATCH",
+      query: { id: "eng-1" },
+      body: { color: "#30A46C", pattern: "glow" },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(200)
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "eng-1" },
+      data: { color: "#30A46C", pattern: "glow" },
+    })
+
+    const data = res._getJSONData() as any
+    expect(data.color).toBe("#30A46C")
+    expect(data.pattern).toBe("glow")
+  })
+
+  it("returns 400 when PATCH has a color outside the curated palette", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockFindUnique.mockResolvedValue(ENGINEER)
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "PATCH",
+      query: { id: "eng-1" },
+      body: { color: "#ABCDEF" },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(400)
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  it("returns 400 when PATCH has an unknown pattern", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockFindUnique.mockResolvedValue(ENGINEER)
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "PATCH",
+      query: { id: "eng-1" },
+      body: { pattern: "confetti" },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(400)
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
 })

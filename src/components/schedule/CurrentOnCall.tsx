@@ -4,7 +4,8 @@ import { addDays, format, formatISO, parseISO } from "date-fns"
 import { useSession } from "next-auth/react"
 import { FC, useMemo } from "react"
 import { Rotation } from "rotations/types"
-import { engineerColor } from "rotations/colors"
+import { colorForEngineer } from "rotations/colors"
+import { SparkleMark, SparkleStyles } from "./sparkle"
 import { useEngineers, useSchedule } from "utils/hooks/useApi"
 
 interface CurrentOnCallProps {
@@ -61,21 +62,25 @@ export const CurrentOnCall: FC<CurrentOnCallProps> = ({ rotation }) => {
     "MMM d, yyyy 'at' h:mm a"
   )
 
+  const color = colorForEngineer(engineer, current.effectiveEngineerId)
+
   return (
     <Flex alignItems="center" gap={0.5}>
+      <SparkleStyles />
       <Box
         style={{
           width: 8,
           height: 8,
           borderRadius: "50%",
           flexShrink: 0,
-          backgroundColor: engineerColor(current.effectiveEngineerId),
+          backgroundColor: color,
         }}
       />
       <Text variant="xs" color={isMe ? "blue100" : "mono60"}>
         {isMe ? "You are" : `${engineer?.name ?? "Someone"} is`} on call until{" "}
         {until}
       </Text>
+      <SparkleMark pattern={engineer?.pattern} color={color} />
     </Flex>
   )
 }

@@ -30,6 +30,18 @@ engineers are skipped when computing a rotation's schedule); `CreateEngineerBody
 / `UpdateEngineerBody` accept both. `PATCH` applies a partial update — only the
 fields present in the body change.
 
+An `Engineer` also has `color` (a hex string from the curated palette in
+`src/rotations/colors.ts`, or `null` for "Auto" — the hashed-from-id fallback)
+and `pattern` (`"sparkles" | "shimmer" | "glow" | null`), an optional animated
+treatment shown on the calendar's on-call bar. Both are set through
+`CreateEngineerBody` / `UpdateEngineerBody`; a `color` outside the curated
+palette or a `pattern` outside the known set returns `400`.
+
+On `POST`, a `color` that's *omitted* from the body defaults to a random
+curated color (not Auto) and an omitted/`null` `pattern` defaults to `null`
+(none) — a new engineer is colorful but undecorated by default. Sending
+`color: null` explicitly still opts into Auto.
+
 ## Rotations — domain `rotations`
 
 | Method | Route | Body | Response |

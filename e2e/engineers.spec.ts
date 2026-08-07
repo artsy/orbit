@@ -41,9 +41,51 @@ test.describe("engineers", () => {
     await page.getByRole("button", { name: "Add engineer" }).click()
 
     // Appears in the list (exact avoids matching the "Grace Hopper added" toast).
-    await expect(
-      page.getByText("Grace Hopper", { exact: true })
-    ).toBeVisible()
+    await expect(page.getByText("Grace Hopper", { exact: true })).toBeVisible()
+  })
+
+  test("sets a calendar color and pattern when adding an engineer", async ({
+    page,
+  }) => {
+    let createdBody: any = null
+
+    await page.route("**/api/engineers", async (route) => {
+      if (route.request().method() === "POST") {
+        createdBody = route.request().postDataJSON()
+        return route.fulfill({
+          status: 201,
+          json: {
+            id: "e2",
+            name: createdBody.name,
+            email: createdBody.email,
+            slackUserId: null,
+            active: true,
+            color: createdBody.color,
+            pattern: createdBody.pattern,
+            createdAt: "2026-01-02T00:00:00.000Z",
+          },
+        })
+      }
+      return route.fulfill({ json: [] })
+    })
+
+    await page.goto("/engineers")
+
+    await page.locator('input[name="name"]').fill("Grace Hopper")
+    await page.locator('input[name="email"]').fill("grace@artsymail.com")
+
+    // Pick a curated swatch (green) instead of leaving it on Auto.
+    await page.getByRole("button", { name: "#30A46C" }).click()
+
+    // Opt into the Sparkles pattern.
+    await page.getByRole("button", { name: "Sparkles" }).click()
+
+    await page.getByRole("button", { name: "Add engineer" }).click()
+
+    await expect(page.getByText("Grace Hopper", { exact: true })).toBeVisible()
+
+    expect(createdBody.color).toBe("#30A46C")
+    expect(createdBody.pattern).toBe("sparkles")
   })
 
   test("deletes an engineer", async ({ page }) => {
@@ -102,6 +144,8 @@ test.describe("engineers", () => {
       email: "ada@artsymail.com",
       slackUserId: null as string | null,
       active: true,
+      color: null as string | null,
+      pattern: null as string | null,
       createdAt: "2026-01-01T00:00:00.000Z",
     }
 
@@ -150,6 +194,8 @@ test.describe("engineers", () => {
       email: "ada@artsymail.com",
       slackUserId: "U0ADA123",
       active: false,
+      color: null,
+      pattern: null,
     })
 
     await expect(

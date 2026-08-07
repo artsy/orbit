@@ -11,6 +11,22 @@ import {
 import { serializeEngineer } from "utils/api/serialize"
 import { recordEvent } from "utils/api/events"
 import { CreateEngineerBody, Engineer } from "rotations/types"
+import {
+  ENGINEER_PATTERNS,
+  isValidEngineerColor,
+  isValidEngineerPattern,
+  randomEngineerColor,
+} from "rotations/colors"
+
+function invalidAppearance(body: Partial<CreateEngineerBody>): string | null {
+  if (!isValidEngineerColor(body.color)) {
+    return "color must be one of the curated palette values, or omitted"
+  }
+  if (!isValidEngineerPattern(body.pattern)) {
+    return `pattern must be one of ${ENGINEER_PATTERNS.join(", ")}, or omitted`
+  }
+  return null
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -36,6 +52,8 @@ export default async function handler(
       if (!body?.name || !body?.email) {
         return sendError(res, 400, "name and email are required")
       }
+      const appearanceError = invalidAppearance(body)
+      if (appearanceError) return sendError(res, 400, appearanceError)
 
       const engineer = await prisma.engineer.create({
         data: {
@@ -43,6 +61,10 @@ export default async function handler(
           email: body.email,
           slackUserId: body.slackUserId ?? null,
           active: body.active ?? true,
+          // A new engineer defaults to a random curated color and no
+          // pattern. `color: null` is still honored as an explicit "Auto".
+          color: body.color !== undefined ? body.color : randomEngineerColor(),
+          pattern: body.pattern ?? null,
         },
       })
       await recordEvent(prisma, {

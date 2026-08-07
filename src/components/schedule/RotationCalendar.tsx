@@ -5,17 +5,27 @@ import dayGridPlugin from "@fullcalendar/daygrid"
 import FullCalendar from "@fullcalendar/react"
 import { format, parseISO } from "date-fns"
 import { FC, useMemo, useState } from "react"
-import { Engineer, ScheduleEntry } from "rotations/types"
-import { engineerColor } from "rotations/colors"
+import { Engineer, EngineerPattern, ScheduleEntry } from "rotations/types"
+import { colorForEngineer } from "rotations/colors"
+import { patternBarStyle, SparkleOverlay, SparkleStyles } from "./sparkle"
 import { useSchedule } from "utils/hooks/useApi"
 
 // Fully custom event rendering (see events builder): the covering engineer is a
 // solid colored bar; an overridden period also gets a separate, muted
 // struck-through bar for the originally scheduled engineer, stacked above it —
-// so overrides read separately from who is really on call.
+// so overrides read separately from who is really on call. The effective bar
+// also carries the engineer's chosen animated pattern, if any.
 const renderEvent = (arg: EventContentArg) => {
-  const { kind, color, label, clickable } = arg.event.extendedProps
+  const { kind, color, label, clickable, pattern } = arg.event
+    .extendedProps as {
+    kind: string
+    color: string
+    label: string | null
+    clickable: boolean
+    pattern: EngineerPattern | null
+  }
   const base: React.CSSProperties = {
+    position: "relative",
     borderRadius: 4,
     padding: "0 4px",
     fontSize: 11,
@@ -42,16 +52,24 @@ const renderEvent = (arg: EventContentArg) => {
     )
   }
 
+  const { className, style: patternStyle } = patternBarStyle(pattern, color)
+
   return (
     <div
-      className={clickable ? "orbit-event-clickable" : undefined}
+      className={
+        [clickable ? "orbit-event-clickable" : "", className ?? ""]
+          .filter(Boolean)
+          .join(" ") || undefined
+      }
       style={{
         ...base,
         background: color,
         color: "#FFFFFF",
         cursor: clickable ? "pointer" : undefined,
+        ...patternStyle,
       }}
     >
+      <SparkleOverlay pattern={pattern} />
       {arg.event.title}
       {label ? ` (${label})` : ""}
     </div>
@@ -100,7 +118,7 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
       const end = zonedDate(entry.periodEnd, timezone) // exclusive for all-day
 
       const nameFor = (id: string | null) =>
-        id ? engineersById[id]?.name ?? "Unknown" : "Unassigned"
+        id ? (engineersById[id]?.name ?? "Unknown") : "Unassigned"
 
       // The originally-scheduled engineer, shown separately (muted) above the
       // real on-call bar only when an override/swap changed the assignment.
@@ -114,13 +132,19 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
           borderColor: "transparent",
           extendedProps: {
             kind: "replaced",
-            color: engineerColor(entry.baseEngineerId),
+            color: colorForEngineer(
+              engineersById[entry.baseEngineerId ?? ""],
+              entry.baseEngineerId
+            ),
             sortKey: 0,
           },
         })
       }
 
       // Who is really on call.
+      const effectiveEngineer = entry.effectiveEngineerId
+        ? engineersById[entry.effectiveEngineerId]
+        : undefined
       result.push({
         title: nameFor(entry.effectiveEngineerId),
         start,
@@ -130,7 +154,8 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
         borderColor: "transparent",
         extendedProps: {
           kind: "effective",
-          color: engineerColor(entry.effectiveEngineerId),
+          color: colorForEngineer(effectiveEngineer, entry.effectiveEngineerId),
+          pattern: effectiveEngineer?.pattern ?? null,
           label: isSwap ? "swap" : isOverride ? "override" : null,
           sortKey: 1,
           clickable: !!(onSwapRequest || onOverrideAction),
@@ -144,6 +169,7 @@ export const RotationCalendar: FC<RotationCalendarProps> = ({
 
   return (
     <Box>
+      <SparkleStyles />
       <style>{`
         .fc .fc-day-sat, .fc .fc-day-sun { background: rgba(0, 0, 0, 0.03); }
         .fc .fc-day-today { background: rgba(0, 0, 0, 0.06) !important; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25); }

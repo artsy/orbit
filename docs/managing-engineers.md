@@ -20,7 +20,8 @@ way to get one is to sign in through the app in your browser.
 ## Add an engineer
 
 **In the UI:** go to **`/engineers`**, enter the person's name, email, and
-(optionally) their Slack user ID, and submit.
+(optionally) their Slack user ID, calendar color, and calendar pattern, and
+submit.
 
 **Via the API:**
 
@@ -31,7 +32,9 @@ curl -X POST http://localhost:3000/api/engineers \
   -d '{
     "name": "Ada Lovelace",
     "email": "ada@artsymail.com",
-    "slackUserId": "U01427GSPK9"
+    "slackUserId": "U01427GSPK9",
+    "color": "#6E56CF",
+    "pattern": "sparkles"
   }'
 ```
 
@@ -42,11 +45,36 @@ updated later via `PATCH /api/engineers/[id]`.
 **Finding someone's Slack user ID:** in Slack, open their profile, click the
 **⋮** (more) button, then **Copy member ID**.
 
+## Choose a calendar appearance
+
+Each engineer can personalize how they show up on the schedule calendar:
+
+- **Color** — a swatch from a curated 10-color palette, or **Auto** to use the
+  stable color hashed from their id instead. A new engineer defaults to a
+  random swatch from the palette (not Auto). Colors are curated rather than
+  free-form so the calendar bar's white text always stays readable.
+- **Pattern** — an optional animated treatment on their on-call calendar bar:
+  **Sparkles** (twinkling star particles spread across the bar), **Shimmer**
+  (a sweeping gradient sheen), or **Glow** (a pulsing halo), or **None**
+  (default for a new engineer). Patterns respect the OS "reduce motion"
+  setting — the styling stays, the animation stops. A small static twinkle
+  also appears next to the name in the schedule table and the "on call
+  until…" preview when a pattern is set.
+
+Both are set on the same add/edit form as name/email/Slack ID (in the UI, the
+**Calendar color** and **Calendar pattern** pickers), or via `color` /
+`pattern` on `CreateEngineerBody` / `UpdateEngineerBody`. `color` must be one
+of the curated palette values (see `ENGINEER_COLORS` in
+`src/rotations/colors.ts`); omitting it on create assigns a random one
+(sending `color: null` explicitly opts into Auto instead). `pattern` must be
+one of `sparkles`, `shimmer`, `glow`, or omitted/`null` for none — anything else
+returns `400`.
+
 ## Edit an engineer
 
 **In the UI:** on **`/engineers`**, click **Edit** next to the person to open a
-form for their name, email, Slack user ID, and **Active** state. Save applies
-the change immediately.
+form for their name, email, Slack user ID, calendar color, calendar pattern,
+and **Active** state. Save applies the change immediately.
 
 **Via the API:**
 
@@ -54,7 +82,7 @@ the change immediately.
 curl -X PATCH http://localhost:3000/api/engineers/<engineerId> \
   -H "Content-Type: application/json" \
   -H "Cookie: <your-session-cookie>" \
-  -d '{ "name": "Ada K. Lovelace", "slackUserId": "U01427GSPK9" }'
+  -d '{ "name": "Ada K. Lovelace", "slackUserId": "U01427GSPK9", "color": "#30A46C", "pattern": "glow" }'
 ```
 
 Only the fields you send are changed — omit a field to leave it as-is.

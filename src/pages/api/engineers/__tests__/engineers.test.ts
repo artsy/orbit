@@ -19,6 +19,7 @@ jest.mock("utils/auth", () => ({
 
 import { prisma } from "lib/db"
 import { getSessionUser } from "utils/auth"
+import { ENGINEER_COLORS } from "rotations/colors"
 import handler from "../index.page"
 
 const mockGetSessionUser = getSessionUser as jest.Mock
@@ -95,6 +96,101 @@ describe("/api/engineers", () => {
         actorEmail: "ada@artsy.net",
       }),
     })
+  })
+
+  it("creates an engineer with a chosen color and pattern on POST", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockCreate.mockResolvedValue({
+      ...ENGINEER,
+      color: "#6E56CF",
+      pattern: "sparkles",
+    })
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "POST",
+      body: {
+        name: "Ada Lovelace",
+        email: "ada@artsy.net",
+        color: "#6E56CF",
+        pattern: "sparkles",
+      },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(201)
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ color: "#6E56CF", pattern: "sparkles" }),
+    })
+    const data = res._getJSONData() as any
+    expect(data.color).toBe("#6E56CF")
+    expect(data.pattern).toBe("sparkles")
+  })
+
+  it("assigns a random curated color and no pattern when POST omits both", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockCreate.mockResolvedValue(ENGINEER)
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "POST",
+      body: { name: "Ada Lovelace", email: "ada@artsy.net" },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(201)
+    const createArgs = mockCreate.mock.calls[0][0]
+    expect(ENGINEER_COLORS).toContain(createArgs.data.color)
+    expect(createArgs.data.pattern).toBeNull()
+  })
+
+  it("respects an explicit null color (Auto) on POST", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockCreate.mockResolvedValue({ ...ENGINEER, color: null })
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "POST",
+      body: { name: "Ada Lovelace", email: "ada@artsy.net", color: null },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(201)
+    expect(mockCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ color: null }),
+    })
+  })
+
+  it("returns 400 when POST has a color outside the curated palette", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "POST",
+      body: { name: "Ada Lovelace", email: "ada@artsy.net", color: "#123456" },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(400)
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  it("returns 400 when POST has an unknown pattern", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+
+    const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+      method: "POST",
+      body: {
+        name: "Ada Lovelace",
+        email: "ada@artsy.net",
+        pattern: "confetti",
+      },
+    })
+
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(400)
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 
   it("returns 400 when POST is missing required fields", async () => {

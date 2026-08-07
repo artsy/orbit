@@ -10,7 +10,10 @@ import {
 } from "@artsy/palette"
 import { Form, Formik } from "formik"
 import * as Yup from "yup"
-import { Engineer } from "rotations/types"
+import { Engineer, EngineerPattern } from "rotations/types"
+import { colorForEngineer } from "rotations/colors"
+import { ColorPicker } from "./ColorPicker"
+import { PatternPicker } from "./PatternPicker"
 import { updateEngineer } from "utils/api/mutations"
 
 interface EditEngineerValues {
@@ -18,6 +21,8 @@ interface EditEngineerValues {
   email: string
   slackUserId: string
   active: boolean
+  color: string | null
+  pattern: EngineerPattern | null
 }
 
 const validationSchema = Yup.object().shape({
@@ -52,6 +57,8 @@ export const EditEngineerModal: React.FC<EditEngineerModalProps> = ({
           email: engineer.email,
           slackUserId: engineer.slackUserId ?? "",
           active: engineer.active,
+          color: engineer.color,
+          pattern: engineer.pattern,
         }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
@@ -61,6 +68,8 @@ export const EditEngineerModal: React.FC<EditEngineerModalProps> = ({
               email: values.email,
               slackUserId: values.slackUserId || null,
               active: values.active,
+              color: values.color,
+              pattern: values.pattern,
             })
 
             sendToast({ variant: "success", message: "Engineer updated" })
@@ -127,6 +136,22 @@ export const EditEngineerModal: React.FC<EditEngineerModalProps> = ({
                 Inactive engineers are skipped in rotations.
               </Text>
             </Box>
+
+            <ColorPicker
+              value={values.color}
+              onChange={(color) => setFieldValue("color", color)}
+              engineerId={engineer.id}
+            />
+
+            <PatternPicker
+              value={values.pattern}
+              onChange={(pattern) => setFieldValue("pattern", pattern)}
+              previewColor={colorForEngineer(
+                { ...engineer, color: values.color },
+                engineer.id
+              )}
+              previewName={values.name || engineer.name}
+            />
 
             <Flex justifyContent="flex-end" gap={1} mt={1}>
               <Button

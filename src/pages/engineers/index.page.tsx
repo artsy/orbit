@@ -11,14 +11,24 @@ import {
 import { Form, Formik } from "formik"
 import { useCallback, useEffect, useState } from "react"
 import * as Yup from "yup"
+import { ColorPicker } from "components/engineers/ColorPicker"
 import { EditEngineerModal } from "components/engineers/EditEngineerModal"
-import { Engineer } from "rotations/types"
+import { PatternPicker } from "components/engineers/PatternPicker"
+import {
+  colorForEngineer,
+  engineerColor,
+  randomEngineerColor,
+} from "rotations/colors"
+import { Engineer, EngineerPattern } from "rotations/types"
+import { SparkleMark, SparkleStyles } from "components/schedule/sparkle"
 import { createEngineer, deleteEngineer } from "utils/api/mutations"
 
 interface AddEngineerValues {
   name: string
   email: string
   slackUserId: string
+  color: string | null
+  pattern: EngineerPattern | null
 }
 
 const validationSchema = Yup.object().shape({
@@ -33,6 +43,10 @@ export default function EngineersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Engineer | null>(null)
+  // A new engineer defaults to a random curated color (matching the API's
+  // default) rather than Auto, so the picker's preselected swatch is what
+  // actually gets saved. Re-rolled after each successful add.
+  const [defaultColor, setDefaultColor] = useState(() => randomEngineerColor())
   const { sendToast } = useToasts()
 
   const loadEngineers = useCallback(async () => {
@@ -91,6 +105,7 @@ export default function EngineersPage() {
 
   return (
     <Box>
+      <SparkleStyles />
       <Text variant="xl">Engineers</Text>
 
       <Spacer y={4} />
@@ -100,7 +115,13 @@ export default function EngineersPage() {
       <Spacer y={2} />
 
       <Formik<AddEngineerValues>
-        initialValues={{ name: "", email: "", slackUserId: "" }}
+        initialValues={{
+          name: "",
+          email: "",
+          slackUserId: "",
+          color: defaultColor,
+          pattern: null,
+        }}
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           try {
@@ -108,10 +129,22 @@ export default function EngineersPage() {
               name: values.name,
               email: values.email,
               slackUserId: values.slackUserId || null,
+              color: values.color,
+              pattern: values.pattern,
             })
 
             setEngineers((current) => [...current, engineer])
-            resetForm()
+            const nextColor = randomEngineerColor()
+            setDefaultColor(nextColor)
+            resetForm({
+              values: {
+                name: "",
+                email: "",
+                slackUserId: "",
+                color: nextColor,
+                pattern: null,
+              },
+            })
 
             sendToast({
               variant: "success",
@@ -135,6 +168,7 @@ export default function EngineersPage() {
           isSubmitting,
           handleChange,
           handleBlur,
+          setFieldValue,
         }) => (
           <Box
             as={Form}
@@ -171,6 +205,18 @@ export default function EngineersPage() {
               onChange={handleChange}
               onBlur={handleBlur}
               error={touched.slackUserId && errors.slackUserId}
+            />
+
+            <ColorPicker
+              value={values.color}
+              onChange={(color) => setFieldValue("color", color)}
+            />
+
+            <PatternPicker
+              value={values.pattern}
+              onChange={(pattern) => setFieldValue("pattern", pattern)}
+              previewColor={values.color ?? engineerColor(null)}
+              previewName={values.name}
             />
 
             <Button type="submit" loading={isSubmitting} width="fit-content">
@@ -211,9 +257,24 @@ export default function EngineersPage() {
               borderColor="mono10"
             >
               <Box>
-                <Text variant="sm" fontWeight="bold">
-                  {engineer.name}
-                </Text>
+                <Flex alignItems="center" gap={0.5}>
+                  <Box
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      flexShrink: 0,
+                      backgroundColor: colorForEngineer(engineer, engineer.id),
+                    }}
+                  />
+                  <Text variant="sm" fontWeight="bold">
+                    {engineer.name}
+                  </Text>
+                  <SparkleMark
+                    pattern={engineer.pattern}
+                    color={colorForEngineer(engineer, engineer.id)}
+                  />
+                </Flex>
                 <Text variant="xs" color="mono60">
                   {engineer.email}
                 </Text>

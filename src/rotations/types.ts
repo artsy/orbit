@@ -13,6 +13,9 @@
 // Entities (shape returned by the API — dates are ISO strings)
 // ---------------------------------------------------------------------------
 
+/** Animated calendar pattern an engineer can opt into (see rotations/colors.ts). */
+export type EngineerPattern = "sparkles" | "shimmer" | "glow"
+
 export interface Engineer {
   id: string
   name: string
@@ -20,6 +23,10 @@ export interface Engineer {
   /** Slack user ID (e.g. "U01427GSPK9") for @mentions — stable across renames. */
   slackUserId: string | null
   active: boolean
+  /** Chosen hex color from the curated palette; null = auto (hashed default). */
+  color: string | null
+  /** Optional animated calendar pattern; null = none. */
+  pattern: EngineerPattern | null
   createdAt: string
 }
 
@@ -146,6 +153,8 @@ export interface CreateEngineerBody {
   email: string
   slackUserId?: string | null
   active?: boolean
+  color?: string | null
+  pattern?: EngineerPattern | null
 }
 
 export type UpdateEngineerBody = Partial<CreateEngineerBody>

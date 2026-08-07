@@ -429,9 +429,9 @@ describe("buildSwap", () => {
 describe("cadence and start-hour handling", () => {
   it("advances every 14 days for a biweekly cadence", () => {
     const rotation = makeRotation({ cadenceDays: 14 })
-    expect(
-      computeBaseAssignment(rotation, THREE_MEMBERS, ANCHOR_DATE)
-    ).toBe("eng-a")
+    expect(computeBaseAssignment(rotation, THREE_MEMBERS, ANCHOR_DATE)).toBe(
+      "eng-a"
+    )
     // day 13 is still period 0
     expect(
       computeBaseAssignment(rotation, THREE_MEMBERS, addDays(ANCHOR_DATE, 13))
@@ -492,6 +492,8 @@ describe("inactive engineers", () => {
         email: `${engineerId}@example.com`,
         slackUserId: null,
         active,
+        color: null,
+        pattern: null,
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     })

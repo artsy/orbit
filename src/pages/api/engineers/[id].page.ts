@@ -11,6 +11,11 @@ import {
 import { serializeEngineer } from "utils/api/serialize"
 import { recordEvent } from "utils/api/events"
 import { Engineer, UpdateEngineerBody } from "rotations/types"
+import {
+  ENGINEER_PATTERNS,
+  isValidEngineerColor,
+  isValidEngineerPattern,
+} from "rotations/colors"
 
 export default async function handler(
   req: NextApiRequest,
@@ -30,6 +35,21 @@ export default async function handler(
       const existing = await prisma.engineer.findUnique({ where: { id } })
       if (!existing) return sendError(res, 404, "Engineer not found")
 
+      if (body.color !== undefined && !isValidEngineerColor(body.color)) {
+        return sendError(
+          res,
+          400,
+          "color must be one of the curated palette values, or omitted"
+        )
+      }
+      if (body.pattern !== undefined && !isValidEngineerPattern(body.pattern)) {
+        return sendError(
+          res,
+          400,
+          `pattern must be one of ${ENGINEER_PATTERNS.join(", ")}, or omitted`
+        )
+      }
+
       const engineer = await prisma.engineer.update({
         where: { id },
         data: {
@@ -39,6 +59,8 @@ export default async function handler(
             ? { slackUserId: body.slackUserId }
             : {}),
           ...(body.active !== undefined ? { active: body.active } : {}),
+          ...(body.color !== undefined ? { color: body.color } : {}),
+          ...(body.pattern !== undefined ? { pattern: body.pattern } : {}),
         },
       })
       await recordEvent(prisma, {

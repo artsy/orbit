@@ -34,6 +34,8 @@ export function serializeEngineer(engineer: PrismaEngineer): Engineer {
     email: engineer.email,
     slackUserId: engineer.slackUserId,
     active: engineer.active,
+    color: engineer.color,
+    pattern: engineer.pattern as Engineer["pattern"],
     createdAt: engineer.createdAt.toISOString(),
   }
 }

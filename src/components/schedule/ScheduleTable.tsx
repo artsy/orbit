@@ -3,7 +3,8 @@ import { TZDate } from "@date-fns/tz"
 import { format, parseISO } from "date-fns"
 import { FC } from "react"
 import { Engineer, ScheduleEntry } from "rotations/types"
-import { engineerColor } from "rotations/colors"
+import { colorForEngineer } from "rotations/colors"
+import { SparkleMark, SparkleStyles } from "./sparkle"
 
 interface ScheduleTableProps {
   entries: ScheduleEntry[]
@@ -49,6 +50,7 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
 
   return (
     <Box>
+      <SparkleStyles />
       <Text variant="xs" color="mono60" mb={0.5}>
         Times shown in {timezone}
       </Text>
@@ -110,7 +112,9 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
                 {format(inZone(entry.periodStart, timezone), "MMM d, HH:mm")} –{" "}
                 {format(
                   inZone(
-                    new Date(parseISO(entry.periodEnd).getTime() - 1).toISOString(),
+                    new Date(
+                      parseISO(entry.periodEnd).getTime() - 1
+                    ).toISOString(),
                     timezone
                   ),
                   "MMM d"
@@ -135,12 +139,24 @@ export const ScheduleTable: FC<ScheduleTableProps> = ({
                     height: 8,
                     borderRadius: "50%",
                     flexShrink: 0,
-                    backgroundColor: engineerColor(entry.effectiveEngineerId),
+                    backgroundColor: colorForEngineer(
+                      engineersById[entry.effectiveEngineerId ?? ""],
+                      entry.effectiveEngineerId
+                    ),
                   }}
                 />
                 <Text variant="sm">
                   {engineerName(entry.effectiveEngineerId, engineersById)}
                 </Text>
+                <SparkleMark
+                  pattern={
+                    engineersById[entry.effectiveEngineerId ?? ""]?.pattern
+                  }
+                  color={colorForEngineer(
+                    engineersById[entry.effectiveEngineerId ?? ""],
+                    entry.effectiveEngineerId
+                  )}
+                />
               </Flex>
             </Box>
 

@@ -18,6 +18,12 @@ model Engineer {
   // engineer (unlike a handle, it doesn't change if the person renames).
   slackUserId String?
   active        Boolean  @default(true)
+  // Chosen hex color from the curated palette (rotations/colors.ts). Null
+  // means "auto" — fall back to the hashed-from-id default color.
+  color   String?
+  // Optional animated calendar pattern: "sparkles" | "shimmer" | "glow".
+  // Null means no pattern.
+  pattern String?
   createdAt     DateTime @default(now())
 
   memberships          RotationMember[]
