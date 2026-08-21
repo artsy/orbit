@@ -57,6 +57,10 @@ export default async function handler(
         startDate: { lte: rangeEnd },
         endDate: { gte: rangeStart },
       },
+      // applyOverrides breaks same-timestamp ties by `id`, but the primary
+      // tiebreak is "most recently created wins" — without an explicit order
+      // here that's at the mercy of Postgres's row order.
+      orderBy: { createdAt: "asc" },
       include: { replacementEngineer: true },
     }),
   ])
