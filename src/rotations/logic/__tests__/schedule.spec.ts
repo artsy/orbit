@@ -1,4 +1,4 @@
-import { addDays } from "date-fns"
+import { addDays, parseISO } from "date-fns"
 
 import { Override, Rotation, RotationMember } from "rotations/types"
 
@@ -6,9 +6,12 @@ import {
   applyOverrides,
   buildSwap,
   computeBaseAssignment,
+  effectiveAssignmentForDate,
   getPeriodBounds,
   getScheduleForRange,
+  isSwapGroupCurrent,
 } from "../schedule"
+import { upcomingShiftsFor } from "../shifts"
 
 // ---------------------------------------------------------------------------
 // Fixture factories
@@ -360,6 +363,45 @@ describe("getScheduleForRange", () => {
 })
 
 // ---------------------------------------------------------------------------
+// effectiveAssignmentForDate
+// ---------------------------------------------------------------------------
+
+describe("effectiveAssignmentForDate", () => {
+  const rotation = makeRotation()
+
+  it("matches the base assignment when there are no overrides", () => {
+    const entry = effectiveAssignmentForDate(
+      rotation,
+      THREE_MEMBERS,
+      [],
+      addDays(ANCHOR_DATE, 7)
+    )
+    expect(entry.periodIndex).toBe(1)
+    expect(entry.baseEngineerId).toBe("eng-b")
+    expect(entry.effectiveEngineerId).toBe("eng-b")
+    expect(entry.override).toBeNull()
+  })
+
+  it("reflects an override covering the date", () => {
+    const override = makeOverride({
+      startDate: ANCHOR,
+      endDate: addDays(ANCHOR_DATE, 6).toISOString(),
+      replacementEngineerId: "eng-cover",
+      createdAt: "2026-01-06T00:00:00.000Z",
+    })
+    const entry = effectiveAssignmentForDate(
+      rotation,
+      THREE_MEMBERS,
+      [override],
+      ANCHOR_DATE
+    )
+    expect(entry.baseEngineerId).toBe("eng-a")
+    expect(entry.effectiveEngineerId).toBe("eng-cover")
+    expect(entry.override).toEqual(override)
+  })
+})
+
+// ---------------------------------------------------------------------------
 // buildSwap
 // ---------------------------------------------------------------------------
 
@@ -367,18 +409,23 @@ describe("buildSwap", () => {
   const rotation = makeRotation()
 
   it("builds two reciprocal overrides covering each engineer's full period", () => {
-    const dateA = addDays(ANCHOR_DATE, 2) // period 0 -> base eng-a
-    const dateB = addDays(ANCHOR_DATE, 9) // period 1 -> base eng-b
+    const dateA = addDays(ANCHOR_DATE, 2) // period 0 -> base/effective eng-a
+    const dateB = addDays(ANCHOR_DATE, 9) // period 1 -> base/effective eng-b
 
-    const [coverForA, coverForB] = buildSwap(
+    const result = buildSwap({
       rotation,
-      THREE_MEMBERS,
-      "eng-a",
-      "eng-b",
+      members: THREE_MEMBERS,
+      overrides: [],
+      engineerAId: "eng-a",
+      engineerBId: "eng-b",
       dateA,
       dateB,
-      "swap-group-1"
-    )
+      swapGroupId: "swap-group-1",
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const [coverForA, coverForB] = result.overrides
 
     expect(coverForA.startDate).toBe(ANCHOR_DATE.toISOString())
     expect(coverForA.endDate).toBe(addDays(ANCHOR_DATE, 6).toISOString())
@@ -394,31 +441,276 @@ describe("buildSwap", () => {
   })
 
   it("shares the same swapGroupId across both overrides", () => {
-    const [coverForA, coverForB] = buildSwap(
+    const result = buildSwap({
       rotation,
-      THREE_MEMBERS,
-      "eng-a",
-      "eng-c",
-      ANCHOR_DATE,
-      addDays(ANCHOR_DATE, 14),
-      "swap-group-xyz"
-    )
+      members: THREE_MEMBERS,
+      overrides: [],
+      engineerAId: "eng-a",
+      engineerBId: "eng-c",
+      dateA: ANCHOR_DATE,
+      dateB: addDays(ANCHOR_DATE, 14),
+      swapGroupId: "swap-group-xyz",
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const [coverForA, coverForB] = result.overrides
     expect(coverForA.swapGroupId).toBe(coverForB.swapGroupId)
     expect(coverForA.swapGroupId).toBe("swap-group-xyz")
   })
 
-  it("works when both dates fall in the same period", () => {
-    const [coverForA, coverForB] = buildSwap(
+  it("rejects a swap where both dates fall in the same period", () => {
+    const result = buildSwap({
+      rotation,
+      members: THREE_MEMBERS,
+      overrides: [],
+      engineerAId: "eng-a",
+      engineerBId: "eng-a",
+      dateA: addDays(ANCHOR_DATE, 1),
+      dateB: addDays(ANCHOR_DATE, 5),
+      swapGroupId: "swap-group-same",
+    })
+    expect(result.ok).toBe(false)
+  })
+
+  it("rejects a swap between an engineer and themselves", () => {
+    const result = buildSwap({
+      rotation,
+      members: THREE_MEMBERS,
+      overrides: [],
+      engineerAId: "eng-a",
+      engineerBId: "eng-a",
+      dateA: ANCHOR_DATE,
+      dateB: addDays(ANCHOR_DATE, 7),
+      swapGroupId: "swap-group-self",
+    })
+    expect(result.ok).toBe(false)
+  })
+
+  it("rejects a swap naming an engineer who isn't effectively on call for that shift", () => {
+    // eng-a's *base* slot is period 0, but nobody has swapped anything in —
+    // eng-a is simply not on call for period 1.
+    const result = buildSwap({
+      rotation,
+      members: THREE_MEMBERS,
+      overrides: [],
+      engineerAId: "eng-a",
+      engineerBId: "eng-b",
+      dateA: addDays(ANCHOR_DATE, 7), // period 1 -> effective eng-b, not eng-a
+      dateB: addDays(ANCHOR_DATE, 14),
+      swapGroupId: "swap-group-mismatch",
+    })
+    expect(result.ok).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// chained swaps — a second swap layered on an existing one
+// ---------------------------------------------------------------------------
+
+describe("chained swaps (regression)", () => {
+  const rotation = makeRotation()
+  const swap1CreatedAt = "2026-01-10T00:00:00.000Z"
+  const swap2CreatedAt = "2026-01-11T00:00:00.000Z"
+
+  // Swap 1: eng-a's period-0 shift <-> eng-c's period-2 shift.
+  const swap1Result = buildSwap({
+    rotation,
+    members: THREE_MEMBERS,
+    overrides: [],
+    engineerAId: "eng-a",
+    engineerBId: "eng-c",
+    dateA: ANCHOR_DATE,
+    dateB: addDays(ANCHOR_DATE, 14),
+    swapGroupId: "swap-1",
+  })
+  if (!swap1Result.ok) throw new Error("expected swap 1 to build")
+  const swap1Overrides = swap1Result.overrides.map((o, i) =>
+    makeOverride({ ...o, id: `swap1-${i}`, createdAt: swap1CreatedAt })
+  )
+
+  function effectiveSequence(overrides: Override[]) {
+    return getScheduleForRange(
       rotation,
       THREE_MEMBERS,
+      overrides,
+      ANCHOR_DATE,
+      addDays(ANCHOR_DATE, 20)
+    ).map((e) => e.effectiveEngineerId)
+  }
+
+  it("after the first swap, period 0 is covered by eng-c and period 2 by eng-a", () => {
+    expect(effectiveSequence(swap1Overrides)).toEqual([
+      "eng-c",
+      "eng-b",
       "eng-a",
-      "eng-a",
-      addDays(ANCHOR_DATE, 1),
-      addDays(ANCHOR_DATE, 5),
-      "swap-group-same"
+    ])
+  })
+
+  it("BUG (fixed): deriving the swap participant from the base round robin is rejected", () => {
+    // This is exactly what the old, buggy UI sent: it picked "eng-a" for
+    // period 0 because eng-a is period 0's *base* occupant — but eng-c is who
+    // actually holds it after swap 1. Silently accepting this is what
+    // produced the reported corruption (eng-a ends up on both period 1 and
+    // period 2, eng-c disappears). The fix rejects it outright.
+    const buggyEngineerA = computeBaseAssignment(
+      rotation,
+      THREE_MEMBERS,
+      ANCHOR_DATE
     )
-    expect(coverForA.startDate).toBe(coverForB.startDate)
-    expect(coverForA.endDate).toBe(coverForB.endDate)
+    expect(buggyEngineerA).toBe("eng-a") // the wrong answer the old UI used
+
+    const swap2 = buildSwap({
+      rotation,
+      members: THREE_MEMBERS,
+      overrides: swap1Overrides,
+      engineerAId: buggyEngineerA as string,
+      engineerBId: "eng-b",
+      dateA: ANCHOR_DATE,
+      dateB: addDays(ANCHOR_DATE, 7),
+      swapGroupId: "swap-2-buggy",
+    })
+
+    expect(swap2.ok).toBe(false)
+  })
+
+  it("FIX: deriving the swap participant from the effective schedule succeeds and stays correct", () => {
+    const entriesAfterSwap1 = getScheduleForRange(
+      rotation,
+      THREE_MEMBERS,
+      swap1Overrides,
+      ANCHOR_DATE,
+      addDays(ANCHOR_DATE, 20)
+    )
+    // Who actually holds period 0 right now — this is what the fixed UI uses.
+    const [currentShiftForEngC] = upcomingShiftsFor(
+      entriesAfterSwap1,
+      "eng-c",
+      ANCHOR_DATE
+    )
+    expect(currentShiftForEngC.periodIndex).toBe(0)
+
+    const swap2Result = buildSwap({
+      rotation,
+      members: THREE_MEMBERS,
+      overrides: swap1Overrides,
+      engineerAId: "eng-c",
+      engineerBId: "eng-b",
+      dateA: parseISO(currentShiftForEngC.periodStart),
+      dateB: addDays(ANCHOR_DATE, 7),
+      swapGroupId: "swap-2-fixed",
+    })
+    expect(swap2Result.ok).toBe(true)
+    if (!swap2Result.ok) return
+
+    const swap2Overrides = swap2Result.overrides.map((o, i) =>
+      makeOverride({ ...o, id: `swap2-${i}`, createdAt: swap2CreatedAt })
+    )
+    const combined = [...swap1Overrides, ...swap2Overrides]
+
+    expect(effectiveSequence(combined)).toEqual(["eng-b", "eng-c", "eng-a"])
+
+    // The permutation invariant: chaining swaps never duplicates or drops an
+    // engineer — it's always a rearrangement of the base assignment.
+    const entries = getScheduleForRange(
+      rotation,
+      THREE_MEMBERS,
+      combined,
+      ANCHOR_DATE,
+      addDays(ANCHOR_DATE, 20)
+    )
+    expect([...entries.map((e) => e.effectiveEngineerId)].sort()).toEqual(
+      [...entries.map((e) => e.baseEngineerId)].sort()
+    )
+  })
+
+  it("deleting the newest swap rolls back one step, not to the base order", () => {
+    // Simulates "delete swap 2's overrides" — swap 1's rows are untouched.
+    expect(effectiveSequence(swap1Overrides)).toEqual([
+      "eng-c",
+      "eng-b",
+      "eng-a",
+    ])
+  })
+
+  describe("isSwapGroupCurrent (gates Modify/Delete)", () => {
+    const swap2Result = buildSwap({
+      rotation,
+      members: THREE_MEMBERS,
+      overrides: swap1Overrides,
+      engineerAId: "eng-c",
+      engineerBId: "eng-b",
+      dateA: ANCHOR_DATE,
+      dateB: addDays(ANCHOR_DATE, 7),
+      swapGroupId: "swap-2-fixed",
+    })
+    if (!swap2Result.ok) throw new Error("expected swap 2 to build")
+    const swap2Overrides = swap2Result.overrides.map((o, i) =>
+      makeOverride({ ...o, id: `swap2-${i}`, createdAt: swap2CreatedAt })
+    )
+    const allOverrides = [...swap1Overrides, ...swap2Overrides]
+
+    it("is true for the newest swap — modifying/deleting it is always safe", () => {
+      expect(isSwapGroupCurrent(allOverrides, swap2Overrides)).toBe(true)
+
+      // Proof it's safe: the replacement baseline (all overrides minus swap
+      // 2's own rows) is exactly swap 1's state, and the pair a "Modify"
+      // prefill would derive from it revalidates cleanly.
+      const baseline = allOverrides.filter(
+        (o) => !swap2Overrides.some((s2) => s2.id === o.id)
+      )
+      const entryP0 = effectiveAssignmentForDate(
+        rotation,
+        THREE_MEMBERS,
+        baseline,
+        ANCHOR_DATE
+      )
+      const entryP1 = effectiveAssignmentForDate(
+        rotation,
+        THREE_MEMBERS,
+        baseline,
+        addDays(ANCHOR_DATE, 7)
+      )
+      expect(entryP0.effectiveEngineerId).toBe("eng-c")
+      expect(entryP1.effectiveEngineerId).toBe("eng-b")
+
+      const revalidated = buildSwap({
+        rotation,
+        members: THREE_MEMBERS,
+        overrides: baseline,
+        engineerAId: entryP0.effectiveEngineerId as string,
+        engineerBId: entryP1.effectiveEngineerId as string,
+        dateA: parseISO(entryP0.periodStart),
+        dateB: parseISO(entryP1.periodStart),
+        swapGroupId: "swap-2-modified",
+      })
+      expect(revalidated.ok).toBe(true)
+    })
+
+    it("is false for an earlier swap a later one has chained off — modifying/deleting it would corrupt the schedule", () => {
+      // Swap 2 chained off swap 1's period-0 leg, so swap 1 is shadowed there
+      // even though its period-2 leg is untouched.
+      expect(isSwapGroupCurrent(allOverrides, swap1Overrides)).toBe(false)
+
+      // Demonstrating *why* it must be gated: naively removing swap 1's rows
+      // anyway (what an ungated Modify/Delete would do) reverts period 2 to
+      // its base engineer (eng-c) — who swap 2 has since placed at period 1.
+      // eng-c now covers two periods and eng-a covers none.
+      const baseline = allOverrides.filter(
+        (o) => !swap1Overrides.some((s1) => s1.id === o.id)
+      )
+      const entries = getScheduleForRange(
+        rotation,
+        THREE_MEMBERS,
+        baseline,
+        ANCHOR_DATE,
+        addDays(ANCHOR_DATE, 20)
+      )
+      expect(entries.map((e) => e.effectiveEngineerId)).toEqual([
+        "eng-b",
+        "eng-c",
+        "eng-c", // duplicate — this is the corruption being guarded against
+      ])
+    })
   })
 })
 
@@ -429,9 +721,9 @@ describe("buildSwap", () => {
 describe("cadence and start-hour handling", () => {
   it("advances every 14 days for a biweekly cadence", () => {
     const rotation = makeRotation({ cadenceDays: 14 })
-    expect(
-      computeBaseAssignment(rotation, THREE_MEMBERS, ANCHOR_DATE)
-    ).toBe("eng-a")
+    expect(computeBaseAssignment(rotation, THREE_MEMBERS, ANCHOR_DATE)).toBe(
+      "eng-a"
+    )
     // day 13 is still period 0
     expect(
       computeBaseAssignment(rotation, THREE_MEMBERS, addDays(ANCHOR_DATE, 13))

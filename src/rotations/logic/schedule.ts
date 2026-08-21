@@ -109,7 +109,9 @@ export function getPeriodBounds(
 
 /**
  * Applies any overrides active on `date` to the base assignment. When
- * multiple overrides overlap `date`, the one created most recently wins.
+ * multiple overrides overlap `date`, the one created most recently wins; ties
+ * (equal `createdAt`) break on `id` so the winner is deterministic regardless
+ * of the caller's array order or the database's row order.
  */
 export function applyOverrides(
   baseEngineerId: string | null,
@@ -128,14 +130,96 @@ export function applyOverrides(
     return { effectiveEngineerId: baseEngineerId, override: null }
   }
 
-  const winner = applicable.reduce((latest, candidate) =>
-    parseISO(candidate.createdAt).getTime() >
-    parseISO(latest.createdAt).getTime()
-      ? candidate
-      : latest
-  )
+  const winner = applicable.reduce((latest, candidate) => {
+    const latestTime = parseISO(latest.createdAt).getTime()
+    const candidateTime = parseISO(candidate.createdAt).getTime()
+    if (candidateTime !== latestTime) {
+      return candidateTime > latestTime ? candidate : latest
+    }
+    return candidate.id > latest.id ? candidate : latest
+  })
 
   return { effectiveEngineerId: winner.replacementEngineerId, override: winner }
+}
+
+/**
+ * Whether `override` is the one currently in effect for its own period — i.e.
+ * nothing newer has been layered on top of it since. A swap's two rows can
+ * fall out of sync with each other: a later swap may chain off only one of
+ * them (see `isSwapGroupCurrent`).
+ */
+function isCurrentOverride(overrides: Override[], override: Override): boolean {
+  const { override: winner } = applyOverrides(
+    null,
+    overrides,
+    parseISO(override.startDate)
+  )
+  return winner?.id === override.id
+}
+
+/**
+ * Whether every row in a swap group is still the one in effect for its own
+ * period. `false` means a later swap has chained off at least one of this
+ * swap's two periods.
+ *
+ * This matters because a swap's `replacementEngineerId` is a snapshot of
+ * "whoever effectively held the other period" at creation time, not a live
+ * reference — so modifying or deleting a group that a later swap has chained
+ * off of reverts one of its periods to a stale value that can now duplicate
+ * an engineer the later swap placed elsewhere. Only a group that is current
+ * on both periods can be safely modified or deleted; undo/edit swaps
+ * newest-first.
+ */
+export function isSwapGroupCurrent(
+  overrides: Override[],
+  group: Override[]
+): boolean {
+  return group.every((o) => isCurrentOverride(overrides, o))
+}
+
+/** The `ScheduleEntry` for a single period, by its index. */
+function entryForPeriodIndex(
+  rotation: Rotation,
+  members: RotationMember[],
+  overrides: Override[],
+  periodIndex: number
+): ScheduleEntry {
+  const periodStart = periodStartInstant(rotation, periodIndex)
+  const periodEnd = periodStartInstant(rotation, periodIndex + 1)
+
+  const baseEngineerId = computeBaseAssignment(rotation, members, periodStart)
+  const { effectiveEngineerId, override } = applyOverrides(
+    baseEngineerId,
+    overrides,
+    periodStart
+  )
+
+  return {
+    periodIndex,
+    periodStart: periodStart.toISOString(),
+    periodEnd: periodEnd.toISOString(),
+    baseEngineerId,
+    effectiveEngineerId,
+    override,
+  }
+}
+
+/**
+ * The full `ScheduleEntry` (base assignment, effective assignment, and
+ * whichever override is responsible) for the period containing `date`.
+ */
+export function effectiveAssignmentForDate(
+  rotation: Rotation,
+  members: RotationMember[],
+  overrides: Override[],
+  date: Date
+): ScheduleEntry {
+  return entryForPeriodIndex(
+    rotation,
+    members,
+    overrides,
+    periodIndexForDate(rotation, date)
+  )
 }
 
 /**
@@ -158,61 +242,105 @@ export function getScheduleForRange(
     periodIndex <= lastPeriodIndex;
     periodIndex++
   ) {
-    const periodStart = periodStartInstant(rotation, periodIndex)
-    const periodEnd = periodStartInstant(rotation, periodIndex + 1)
-
-    const baseEngineerId = computeBaseAssignment(rotation, members, periodStart)
-    const { effectiveEngineerId, override } = applyOverrides(
-      baseEngineerId,
-      overrides,
-      periodStart
-    )
-
-    entries.push({
-      periodIndex,
-      periodStart: periodStart.toISOString(),
-      periodEnd: periodEnd.toISOString(),
-      baseEngineerId,
-      effectiveEngineerId,
-      override,
-    })
+    entries.push(entryForPeriodIndex(rotation, members, overrides, periodIndex))
   }
 
   return entries
 }
 
+export interface BuildSwapParams {
+  rotation: Rotation
+  members: RotationMember[]
+  /** Overrides already in effect on the rotation, so a swap that trades a
+   * shift someone holds only because of an earlier override/swap (not their
+   * base round-robin slot) is validated — and recorded — against who is
+   * *actually* on call, not just the base rotation. */
+  overrides: Override[]
+  /** The engineer giving up the shift covering `dateA`. */
+  engineerAId: string
+  /** The engineer giving up the shift covering `dateB`. */
+  engineerBId: string
+  /** A date inside engineer A's shift being given up. */
+  dateA: Date
+  /** A date inside engineer B's shift being given up. */
+  dateB: Date
+  swapGroupId: string
+}
+
+export type BuildSwapResult =
+  | { ok: true; overrides: [CreateOverrideBody, CreateOverrideBody] }
+  | { ok: false; error: string }
+
 /**
  * Builds the two reciprocal overrides that swap engineer A's shift
- * (covering dateA) with engineer B's shift (covering dateB).
+ * (covering dateA) with engineer B's shift (covering dateB) — or rejects the
+ * request when it doesn't match who is actually on call.
+ *
+ * Both sides are validated against the *effective* schedule (base assignment
+ * with `overrides` already applied), not just the base round-robin. This is
+ * what lets swaps chain: a second swap that trades a shift someone holds
+ * because of an earlier swap resolves correctly, and a request built from
+ * stale data (an engineer who no longer holds that shift) is rejected instead
+ * of silently corrupting the schedule.
  */
-export function buildSwap(
-  rotation: Rotation,
-  members: RotationMember[],
-  engineerAId: string,
-  engineerBId: string,
-  dateA: Date,
-  dateB: Date,
-  swapGroupId: string
-): CreateOverrideBody[] {
+export function buildSwap(params: BuildSwapParams): BuildSwapResult {
+  const {
+    rotation,
+    members,
+    overrides,
+    engineerAId,
+    engineerBId,
+    dateA,
+    dateB,
+    swapGroupId,
+  } = params
+
   const boundsA = getPeriodBounds(rotation, dateA)
   const boundsB = getPeriodBounds(rotation, dateB)
 
-  const originalA = computeBaseAssignment(
+  if (boundsA.periodIndex === boundsB.periodIndex) {
+    return {
+      ok: false,
+      error:
+        "dateA and dateB fall in the same period — pick two different shifts",
+    }
+  }
+
+  if (engineerAId === engineerBId) {
+    return { ok: false, error: "Engineer A and Engineer B must be different" }
+  }
+
+  const entryA = entryForPeriodIndex(
     rotation,
     members,
-    boundsA.periodStart
+    overrides,
+    boundsA.periodIndex
   )
-  const originalB = computeBaseAssignment(
+  const entryB = entryForPeriodIndex(
     rotation,
     members,
-    boundsB.periodStart
+    overrides,
+    boundsB.periodIndex
   )
+
+  if (entryA.effectiveEngineerId !== engineerAId) {
+    return {
+      ok: false,
+      error: "Engineer A is not currently on call for the selected shift",
+    }
+  }
+  if (entryB.effectiveEngineerId !== engineerBId) {
+    return {
+      ok: false,
+      error: "Engineer B is not currently on call for the selected shift",
+    }
+  }
 
   const coverForA: CreateOverrideBody = {
     startDate: boundsA.periodStart.toISOString(),
     endDate: addDays(boundsA.periodEnd, -1).toISOString(),
     replacementEngineerId: engineerBId,
-    originalEngineerId: originalA,
+    originalEngineerId: engineerAId,
     swapGroupId,
   }
 
@@ -220,9 +348,9 @@ export function buildSwap(
     startDate: boundsB.periodStart.toISOString(),
     endDate: addDays(boundsB.periodEnd, -1).toISOString(),
     replacementEngineerId: engineerAId,
-    originalEngineerId: originalB,
+    originalEngineerId: engineerBId,
     swapGroupId,
   }
 
-  return [coverForA, coverForB]
+  return { ok: true, overrides: [coverForA, coverForB] }
 }

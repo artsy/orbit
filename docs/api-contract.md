@@ -89,9 +89,24 @@ compute `entries`.
 |---|---|---|---|
 | POST | `/api/rotations/[id]/swaps` | `CreateSwapBody` | `Override[]` (the two reciprocal overrides, sharing a `swapGroupId`) (201) |
 
-The `/swaps` handler uses `buildSwap` from the logic module to compute the two
-override payloads, generates a shared `swapGroupId`, and persists both in a
-transaction.
+The `/swaps` handler loads the rotation's existing overrides and passes them
+to `buildSwap` from the logic module, which validates `engineerAId` /
+`engineerBId` against who is **effectively** on call for `dateA` / `dateB` —
+the schedule with any existing overrides/swaps applied, not just the base
+round-robin. `buildSwap` returns `400` (via `sendError`) when:
+
+- `engineerAId` (or `engineerBId`) is not the effective on-call engineer for
+  `dateA` (or `dateB`),
+- `engineerAId` and `engineerBId` are the same engineer, or
+- `dateA` and `dateB` fall in the same period.
+
+On success it generates a shared `swapGroupId` and persists both new override
+rows in a transaction; it never deletes or modifies an existing override, so
+swaps stack as independent layers and `applyOverrides`' latest-`createdAt`-wins
+rule resolves each period. `originalEngineerId` on each new row is the
+effective engineer giving up that shift. Deleting the most recent swap in a
+chain rolls the affected periods back exactly one step, to the swap
+underneath it.
 
 ## Teams — domain `teams`
 

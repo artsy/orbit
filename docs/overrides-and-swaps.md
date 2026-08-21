@@ -42,14 +42,29 @@ shift is covered by B, and B's shift is covered by A.
 
 **In the UI:** on **`/rotations/<rotationId>`**, click **Swap shifts**. Choose
 engineer A and engineer B; each engineer's shift field is a dropdown of that
-engineer's **next two upcoming shifts**, nearest one preselected — pick the
-shift to give up from the dropdown rather than typing a date.
+engineer's **next two upcoming shifts** — the shifts they're currently on call
+for, whether that's their base round-robin slot or one they picked up through
+an earlier swap. The nearest one is preselected — pick the shift to give up
+from the dropdown rather than typing a date.
 
 You can also start a swap from the schedule list itself: clicking any row
-opens **Swap shifts** pre-filled with that row's engineer as engineer A (that
-shift as A's) and you (the signed-in user, matched by email to an engineer
-record) as engineer B, with your own next upcoming shift preselected for B.
-Adjust either side before submitting.
+opens **Swap shifts** pre-filled with that row's currently on-call engineer as
+engineer A (that shift as A's) and you (the signed-in user, matched by email
+to an engineer record) as engineer B, with your own next upcoming shift
+preselected for B. Adjust either side before submitting.
+
+A swap can trade a shift that's on someone's schedule only because of an
+earlier swap — swaps chain. Say the base order is Margaret / Ada / Grace and a
+first swap trades Margaret's week for Grace's, so Grace is now covering what
+was Margaret's week. A second swap can then trade Grace's currently-on-call
+week for Ada's, landing on Ada / Grace / Margaret. Each swap is an independent
+layer on the schedule, so deleting the most recent one rolls the schedule back
+exactly one step to the swap underneath it, not all the way back to the base
+order.
+
+A swap request naming a shift the engineer isn't currently on call for is
+rejected with a `400` — see
+[`docs/api-contract.md`](api-contract.md#swaps--domain-overrides).
 
 **Via the API:**
 
@@ -82,16 +97,26 @@ curl -X DELETE http://localhost:3000/api/overrides/<overrideId> \
 
 To undo a swap, delete both overrides that share its `swapGroupId`.
 
-## Modify or delete from the calendar
+## Modify, delete, or add another swap from the calendar
 
 Tapping the on-call bar of an **overridden or swapped** period in the calendar
 opens an actions dialog:
 
+- **Add swap** — opens **Swap shifts** pre-filled with this period's currently
+  on-call engineer as engineer A, to trade this shift for another one. Always
+  available, and the way to chain a swap onto this one.
 - **Modify** — opens the change pre-filled: a plain override opens the override
-  form (which saves via `PATCH /api/overrides/[id]`); a swap opens the swap form
-  pre-filled, and saving replaces the swap's two overrides with a fresh pair.
+  form (which saves via `PATCH /api/overrides/[id]`); a swap opens the swap
+  form pre-filled with the schedule as it'll look once this swap's own two
+  overrides are removed, and saving replaces them with a fresh pair.
 - **Delete** — removes the override, or, for a swap, both overrides in the
   group.
+
+**Modify and Delete are disabled** on a swap that a later swap has chained off
+of (the dialog explains why). Editing or removing that swap would corrupt the
+schedule — one engineer would end up covering two periods, another none — so
+undo or edit swaps **newest-first**: modify or delete the later swap first,
+and the earlier one becomes editable again.
 
 (Tapping the bar of a normal, unchanged period still opens the "swap with me"
 suggestion instead.)
