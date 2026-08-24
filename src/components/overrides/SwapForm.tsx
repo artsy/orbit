@@ -2,8 +2,10 @@ import { Box, Button, Flex, Input, Select, useToasts } from "@artsy/palette"
 import { TZDate } from "@date-fns/tz"
 import { format, parseISO } from "date-fns"
 import { Form, Formik, useFormikContext } from "formik"
+import { useMemo } from "react"
 import * as Yup from "yup"
 import { Engineer, ScheduleEntry } from "rotations/types"
+import { upcomingShiftsFor as upcomingEffectiveShiftsFor } from "rotations/logic"
 import { createSwap, deleteOverride } from "utils/api/mutations"
 
 export interface SwapFormProps {
@@ -29,20 +31,11 @@ export interface SwapFormValues {
   reason: string
 }
 
-const upcomingShiftsFor = (engineerId: string, entries: ScheduleEntry[]) => {
-  const now = Date.now()
-  return entries
-    .filter(
-      (e) =>
-        e.baseEngineerId === engineerId &&
-        parseISO(e.periodEnd).getTime() > now
-    )
-    .sort(
-      (a, b) =>
-        parseISO(a.periodStart).getTime() - parseISO(b.periodStart).getTime()
-    )
-    .slice(0, 2)
-}
+// Effective (post-override), not base — an engineer's shift can be one a
+// previous swap moved onto their schedule, not just their round-robin slot.
+// Capped to the nearest two so the dropdown stays short.
+const upcomingShiftsFor = (engineerId: string, entries: ScheduleEntry[]) =>
+  upcomingEffectiveShiftsFor(entries, engineerId, new Date()).slice(0, 2)
 
 const shiftLabel = (entry: ScheduleEntry, timezone: string) => {
   const start = new TZDate(parseISO(entry.periodStart).getTime(), timezone)
@@ -53,23 +46,59 @@ const shiftLabel = (entry: ScheduleEntry, timezone: string) => {
   return `${format(start, "MMM d")} – ${format(endInclusive, "MMM d")}`
 }
 
-const validationSchema = Yup.object().shape({
-  engineerAId: Yup.string().required("Engineer A is required"),
-  dateA: Yup.string().required("A date within engineer A's shift is required"),
-  engineerBId: Yup.string()
-    .required("Engineer B is required")
-    .test(
-      "distinct-engineers",
-      "Engineers must be different",
-      function (engineerBId) {
-        const { engineerAId } = this.parent
-        if (!engineerAId || !engineerBId) return true
-        return engineerAId !== engineerBId
-      }
-    ),
-  dateB: Yup.string().required("A date within engineer B's shift is required"),
-  reason: Yup.string(),
-})
+// Confirms `engineerId` is *effectively* on call for the shift starting at
+// `periodStart` — i.e. matches `entries` as of right now, not as of whenever
+// the form was opened. This is what stops a swap built from stale data (most
+// notably editing a swap that a later one has since chained off of) from
+// reaching the API instead of surfacing a field error.
+const holdsShift = (
+  entries: ScheduleEntry[],
+  engineerId: string | undefined,
+  periodStart: string | undefined
+) => {
+  if (!engineerId || !periodStart) return true
+  return entries.some(
+    (e) => e.periodStart === periodStart && e.effectiveEngineerId === engineerId
+  )
+}
+
+// A function of `entries` rather than a module-level constant: the
+// "still holds this shift" checks need the current schedule, and this
+// Formik version doesn't thread a validation context through to Yup.
+const buildValidationSchema = (entries: ScheduleEntry[]) =>
+  Yup.object().shape({
+    engineerAId: Yup.string().required("Engineer A is required"),
+    dateA: Yup.string()
+      .required("A date within engineer A's shift is required")
+      .test(
+        "holds-shift-a",
+        "Engineer A is no longer on call for that shift — pick another",
+        function (dateA) {
+          return holdsShift(entries, this.parent.engineerAId, dateA)
+        }
+      ),
+    engineerBId: Yup.string()
+      .required("Engineer B is required")
+      .test(
+        "distinct-engineers",
+        "Engineers must be different",
+        function (engineerBId) {
+          const { engineerAId } = this.parent
+          if (!engineerAId || !engineerBId) return true
+          return engineerAId !== engineerBId
+        }
+      ),
+    dateB: Yup.string()
+      .required("A date within engineer B's shift is required")
+      .test(
+        "holds-shift-b",
+        "Engineer B is no longer on call for that shift — pick another",
+        function (dateB) {
+          return holdsShift(entries, this.parent.engineerBId, dateB)
+        }
+      ),
+    reason: Yup.string(),
+  })
 
 interface SwapFormFieldsProps {
   engineerOptions: { value: string; text: string }[]
@@ -223,6 +252,11 @@ export const SwapForm: React.FC<SwapFormProps> = ({
     value: engineer.id,
     text: engineer.name,
   }))
+
+  const validationSchema = useMemo(
+    () => buildValidationSchema(entries),
+    [entries]
+  )
 
   return (
     <Formik<SwapFormValues>

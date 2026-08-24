@@ -84,10 +84,18 @@ async function mockRotationPage(
   )
   await page.route("**/api/overrides/*", async (route) => {
     if (route.request().method() === "DELETE") {
-      state.overrides = []
+      const id = route.request().url().split("/").pop()
+      state.overrides = state.overrides.filter(o => o.id !== id)
       return route.fulfill({ json: {} })
     }
     return route.fallback()
+  })
+  // Captured by tests via `state.lastSwapPost`; doesn't actually mutate
+  // `state.overrides` — these specs only need to see what was requested.
+  await page.route("**/api/rotations/rot-1/swaps", async (route) => {
+    const body = route.request().postDataJSON()
+    ;(state as any).lastSwapPost = body
+    return route.fulfill({ json: [] })
   })
 
   return state
@@ -510,5 +518,249 @@ test.describe("rotation management", () => {
     await expect(page.getByText("Ada Lovelace")).toBeVisible()
     await expect(page.getByText("Grace Hopper")).toBeVisible()
     await expect(page.getByText("Test User")).toBeVisible()
+  })
+
+  // ---------------------------------------------------------------------
+  // Chained swaps — a swap layered on top of an existing one.
+  //
+  // Base order: e1 (Ada) / e2 (Grace) / e3 (Test User) on periods p0/p1/p2.
+  // swap-1 already traded p0 <-> p2 (e1 <-> e3). swap-2 then chained off
+  // swap-1's p0 leg, trading it for p1 (e2): effectively p0 = e2, p1 = e3,
+  // p2 = e1. swap-1 is now shadowed on p0 but not on p2.
+  //
+  // Uses current-month dates (like `currentMonthOverride()` above) so the
+  // periods render as calendar bars in FullCalendar's default month view.
+  // ---------------------------------------------------------------------
+  const chainedSwapFixture = () => {
+    const now = new Date()
+    const y = now.getUTCFullYear()
+    const m = now.getUTCMonth()
+    // JS normalizes an out-of-range day-of-month (e.g. 37 in a 31-day month)
+    // into the following month, so these stay 3 real consecutive weekly
+    // periods even when day 16 + 3 weeks rolls past the month's end.
+    const day = (d: number) => new Date(Date.UTC(y, m, d)).toISOString()
+    const dayEnd = (d: number) => new Date(Date.UTC(y, m, d - 1)).toISOString()
+
+    // Start on day 16 (not day 2): periods must still be *upcoming* relative
+    // to whenever the suite actually runs — "upcomingShiftsFor" (real,
+    // effective-based logic, not mocked) filters out anything already
+    // ended — while day 16 is safely within the current month for
+    // FullCalendar's default month view to render the bars at all.
+    const p0Start = day(16)
+    const p1Start = day(23)
+    const p2Start = day(30)
+    const p2End = day(37)
+
+    const swap1a = {
+      id: "swap1-a",
+      rotationId: "rot-1",
+      startDate: p0Start,
+      endDate: dayEnd(23),
+      replacementEngineerId: "e3",
+      originalEngineerId: "e1",
+      reason: null,
+      createdByEmail: "ada@artsymail.com",
+      swapGroupId: "swap-1",
+      createdAt: "2026-01-10T00:00:00.000Z",
+    }
+    const swap1b = {
+      id: "swap1-b",
+      rotationId: "rot-1",
+      startDate: p2Start,
+      endDate: dayEnd(37),
+      replacementEngineerId: "e1",
+      originalEngineerId: "e3",
+      reason: null,
+      createdByEmail: "ada@artsymail.com",
+      swapGroupId: "swap-1",
+      createdAt: "2026-01-10T00:00:00.000Z",
+    }
+    const swap2a = {
+      id: "swap2-a",
+      rotationId: "rot-1",
+      startDate: p0Start,
+      endDate: dayEnd(23),
+      replacementEngineerId: "e2",
+      originalEngineerId: "e3",
+      reason: null,
+      createdByEmail: "ada@artsymail.com",
+      swapGroupId: "swap-2",
+      createdAt: "2026-01-11T00:00:00.000Z",
+    }
+    const swap2b = {
+      id: "swap2-b",
+      rotationId: "rot-1",
+      startDate: p1Start,
+      endDate: dayEnd(30),
+      replacementEngineerId: "e3",
+      originalEngineerId: "e2",
+      reason: null,
+      createdByEmail: "ada@artsymail.com",
+      swapGroupId: "swap-2",
+      createdAt: "2026-01-11T00:00:00.000Z",
+    }
+
+    const entries = [
+      {
+        periodIndex: 0,
+        periodStart: p0Start,
+        periodEnd: p1Start,
+        baseEngineerId: "e1",
+        effectiveEngineerId: "e2", // swap-2 wins (newer)
+        override: swap2a,
+      },
+      {
+        periodIndex: 1,
+        periodStart: p1Start,
+        periodEnd: p2Start,
+        baseEngineerId: "e2",
+        effectiveEngineerId: "e3", // swap-2's other leg
+        override: swap2b,
+      },
+      {
+        periodIndex: 2,
+        periodStart: p2Start,
+        periodEnd: p2End,
+        baseEngineerId: "e3",
+        effectiveEngineerId: "e1", // swap-1's untouched leg
+        override: swap1b,
+      },
+    ]
+
+    return {
+      // `startModify`'s replacement-baseline recompute calls the real pure
+      // logic against the rotation's actual anchor/cadence — so the anchor
+      // is pinned to p0Start, aligning that math exactly to this fixture's
+      // hand-picked dates instead of whatever the module-level `rotation`
+      // constant (anchored 2026-01-05) would otherwise put there.
+      rotation: { ...rotation, anchorDate: p0Start, cadenceDays: 7 },
+      members: [memberFor("e1", 0), memberFor("e2", 1), memberFor("e3", 2)],
+      overrides: [swap1a, swap1b, swap2a, swap2b],
+      entries,
+    }
+  }
+
+  // `mockRotationPage` always serves the module-level `rotation` constant for
+  // the plain rotation GET; registering this after it wins (same trick as
+  // "edits a rotation from the rotation page" above) so these tests' custom
+  // anchorDate reaches the client's own schedule math.
+  async function useFixtureRotation(page: Page, fixtureRotation: any) {
+    await page.route("**/api/rotations/rot-1", (route) =>
+      route.fulfill({ json: fixtureRotation })
+    )
+  }
+
+  test("offers Add swap on an already-swapped period, targeting the effective engineer", async ({
+    page,
+  }) => {
+    const fixture = chainedSwapFixture()
+    const state = await mockRotationPage(page, fixture)
+    await useFixtureRotation(page, fixture.rotation)
+
+    await page.goto("/rotations/rot-1")
+
+    // p0's bar shows Grace (swap-2's effective engineer), not Ada (base).
+    const calendar = page.locator(".fc")
+    await calendar.getByText("Grace Hopper").first().click()
+
+    const actionsDialog = page.getByRole("dialog").filter({ hasText: "Swap" })
+    await expect(actionsDialog).toBeVisible()
+    await actionsDialog.getByRole("button", { name: "Add swap" }).click()
+
+    const swapModal = page
+      .getByRole("dialog")
+      .filter({ hasText: "Swap shifts" })
+    await expect(swapModal).toBeVisible()
+    // Engineer A is prefilled with Grace — the effective holder — not Ada.
+    await expect(swapModal.locator('select[name="engineerAId"]')).toHaveValue(
+      "e2"
+    )
+    await expect(swapModal.locator('select[name="dateA"]')).toHaveValue(
+      fixture.entries[0].periodStart
+    )
+
+    // Pick Ada (e1) as engineer B — she's effectively on p2, not her base p0.
+    await swapModal.locator('select[name="engineerBId"]').selectOption("e1")
+    await expect(swapModal.locator('select[name="dateB"]')).toHaveValue(
+      fixture.entries[2].periodStart
+    )
+
+    await swapModal.getByRole("button", { name: "Swap shifts" }).click()
+    await expect(swapModal).not.toBeVisible()
+
+    expect((state as any).lastSwapPost).toMatchObject({
+      engineerAId: "e2",
+      engineerBId: "e1",
+      dateA: fixture.entries[0].periodStart,
+      dateB: fixture.entries[2].periodStart,
+    })
+  })
+
+  test("disables Modify and Delete on a swap a later swap has chained off of", async ({
+    page,
+  }) => {
+    const fixture = chainedSwapFixture()
+    await mockRotationPage(page, fixture)
+    await useFixtureRotation(page, fixture.rotation)
+
+    await page.goto("/rotations/rot-1")
+
+    // p2's bar belongs to swap-1, which is unshadowed there — but swap-1 is
+    // shadowed on p0 by swap-2, so the group as a whole must be gated.
+    // "Ada Lovelace" also appears earlier (day 2) as period 0's muted,
+    // non-clickable "replaced" bar (its base engineer) — .last() is p2's
+    // clickable effective bar, since FullCalendar sorts events by start date.
+    const calendar = page.locator(".fc")
+    await calendar.getByText("Ada Lovelace").last().click()
+
+    const dialog = page.getByRole("dialog").filter({ hasText: "Swap" })
+    await expect(dialog).toBeVisible()
+    await expect(
+      dialog.getByText(/later swap has since covered part of this one/)
+    ).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "Modify" })).toBeDisabled()
+    await expect(dialog.getByRole("button", { name: "Delete" })).toBeDisabled()
+    // Add swap remains available regardless.
+    await expect(dialog.getByRole("button", { name: "Add swap" })).toBeEnabled()
+  })
+
+  test("modifying the current (topmost) swap prefills from the post-removal schedule", async ({
+    page,
+  }) => {
+    const fixture = chainedSwapFixture()
+    const state = await mockRotationPage(page, fixture)
+    await useFixtureRotation(page, fixture.rotation)
+
+    await page.goto("/rotations/rot-1")
+
+    // p0's bar belongs to swap-2, which is current on both its periods
+    // (p0 and p1) — Modify must be available and correct here.
+    const calendar = page.locator(".fc")
+    await calendar.getByText("Grace Hopper").first().click()
+
+    const dialog = page.getByRole("dialog").filter({ hasText: "Swap" })
+    await expect(dialog.getByRole("button", { name: "Modify" })).toBeEnabled()
+    await dialog.getByRole("button", { name: "Modify" }).click()
+
+    const editModal = page.getByRole("dialog").filter({ hasText: "Edit swap" })
+    await expect(editModal).toBeVisible()
+    // The replacement baseline (swap-2's own rows removed) is swap-1's state:
+    // p0 = e3 (Test User), p1 = e2 (Grace) — not swap-2's own effect on
+    // itself, and not the base round robin either.
+    await expect(editModal.locator('select[name="engineerAId"]')).toHaveValue(
+      "e3"
+    )
+    await expect(editModal.locator('select[name="engineerBId"]')).toHaveValue(
+      "e2"
+    )
+
+    await editModal.getByRole("button", { name: "Save changes" }).click()
+    await expect(editModal).not.toBeVisible()
+
+    // Both of swap-2's rows were deleted, then a fresh swap POSTed.
+    expect((state as any).lastSwapPost).toMatchObject({
+      engineerAId: "e3",
+      engineerBId: "e2",
+    })
   })
 })

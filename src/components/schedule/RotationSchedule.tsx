@@ -17,6 +17,12 @@ import Link from "next/link"
 import { FC, useMemo, useState } from "react"
 import { Engineer, Override, ScheduleEntry } from "rotations/types"
 import {
+  effectiveAssignmentForDate,
+  getScheduleForRange,
+  isSwapGroupCurrent,
+  upcomingShiftsFor,
+} from "rotations/logic"
+import {
   useEngineers,
   useMembers,
   useOverrides,
@@ -56,23 +62,6 @@ interface RotationScheduleProps {
 const PERIODS_AHEAD = 8
 const DEFAULT_CADENCE_DAYS = 7
 
-const findMyNextShift = (
-  entries: ScheduleEntry[],
-  engineerId: string
-): ScheduleEntry | undefined => {
-  const now = Date.now()
-  return entries
-    .filter(
-      (entry) =>
-        entry.baseEngineerId === engineerId &&
-        parseISO(entry.periodEnd).getTime() > now
-    )
-    .sort(
-      (a, b) =>
-        parseISO(a.periodStart).getTime() - parseISO(b.periodStart).getTime()
-    )[0]
-}
-
 export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const {
     data: rotation,
@@ -96,6 +85,15 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const [editingSwap, setEditingSwap] = useState<{
     prefill: Partial<SwapFormValues>
     replaceIds: string[]
+    /**
+     * The schedule as it would look with this swap's own overrides already
+     * removed — i.e. what's actually true once "Save changes" deletes them.
+     * The prefill and the shift dropdowns are both derived from this, not
+     * from the page's current `entries` (which still include the swap being
+     * replaced) — otherwise the edit form can validate against a schedule
+     * that's about to stop existing.
+     */
+    entries: ScheduleEntry[]
   } | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -181,9 +179,11 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   }
 
   const handleRowClick = (entry: ScheduleEntry) => {
-    const myNext = myEngineer ? findMyNextShift(entries, myEngineer.id) : undefined
+    const [myNext] = myEngineer
+      ? upcomingShiftsFor(entries, myEngineer.id, new Date())
+      : []
     setSwapPrefill({
-      engineerAId: entry.baseEngineerId ?? "",
+      engineerAId: entry.effectiveEngineerId ?? "",
       dateA: entry.periodStart,
       engineerBId: myEngineer?.id ?? "",
       dateB: myNext?.periodStart ?? "",
@@ -200,22 +200,84 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
       ? (overrides ?? []).filter((o) => o.swapGroupId === override.swapGroupId)
       : []
 
+  const startAddSwap = () => {
+    if (!actionEntry) return
+    setSwapPrefill({
+      engineerAId: actionEntry.effectiveEngineerId ?? "",
+      dateA: actionEntry.periodStart,
+      engineerBId: "",
+      dateB: "",
+    })
+    setSwapOpen(true)
+    setActionEntry(null)
+  }
+
   const startModify = () => {
     const ov = actionEntry?.override
     if (!ov) return
 
     const group = groupFor(ov)
     if (ov.swapGroupId && group.length === 2) {
+      if (!isSwapGroupCurrent(overrides ?? [], group)) return
+
+      // The replacement baseline: the schedule as it'll actually look once
+      // this group's own two rows are gone. Deriving the prefill from the
+      // *page's* entries would show this group's own effect on itself
+      // (always true) rather than what's underneath it — and for a group
+      // that's current on both periods, that's exactly what's needed here.
+      const groupIds = group.map((o) => o.id)
+      const baselineOverrides = (overrides ?? []).filter(
+        (o) => !groupIds.includes(o.id)
+      )
+      const members = schedule?.members ?? []
       const [first, second] = group
+      const entryA = effectiveAssignmentForDate(
+        rotation,
+        members,
+        baselineOverrides,
+        parseISO(first.startDate)
+      )
+      const entryB = effectiveAssignmentForDate(
+        rotation,
+        members,
+        baselineOverrides,
+        parseISO(second.startDate)
+      )
+      // Widen the usual rolling window (today .. +N periods) to guarantee it
+      // covers the group's own two periods, even if one starts before today
+      // — a swap can cover a period that's already begun.
+      const windowStart = new Date(
+        Math.min(
+          parseISO(start).getTime(),
+          parseISO(first.startDate).getTime(),
+          parseISO(second.startDate).getTime()
+        )
+      )
+      const windowEnd = new Date(
+        Math.max(
+          parseISO(end).getTime(),
+          parseISO(first.startDate).getTime(),
+          parseISO(second.startDate).getTime()
+        )
+      )
+      const baselineEntries = getScheduleForRange(
+        rotation,
+        members,
+        baselineOverrides,
+        windowStart,
+        windowEnd
+      )
+
       setEditingSwap({
         prefill: {
-          engineerAId: first.originalEngineerId ?? "",
+          engineerAId: entryA.effectiveEngineerId ?? "",
           dateA: first.startDate,
-          engineerBId: second.originalEngineerId ?? "",
+          engineerBId: entryB.effectiveEngineerId ?? "",
           dateB: second.startDate,
           reason: first.reason ?? "",
         },
-        replaceIds: group.map((o) => o.id),
+        replaceIds: groupIds,
+        entries: baselineEntries,
       })
     } else {
       setEditingOverride(ov)
@@ -226,11 +288,17 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const handleDeleteAction = async () => {
     const ov = actionEntry?.override
     if (!ov) return
+    const group = groupFor(ov)
+    if (
+      ov.swapGroupId &&
+      group.length === 2 &&
+      !isSwapGroupCurrent(overrides ?? [], group)
+    ) {
+      return
+    }
     setDeleting(true)
     try {
-      const ids = ov.swapGroupId
-        ? groupFor(ov).map((o) => o.id)
-        : [ov.id]
+      const ids = ov.swapGroupId ? group.map((o) => o.id) : [ov.id]
       await Promise.all(ids.map((id) => deleteOverride(id)))
       sendToast({
         variant: "success",
@@ -250,7 +318,16 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   }
 
   const nameFor = (id: string | null) =>
-    id ? engineersById[id]?.name ?? "Unknown engineer" : "Unassigned"
+    id ? (engineersById[id]?.name ?? "Unknown engineer") : "Unassigned"
+
+  const actionGroup = actionEntry?.override
+    ? groupFor(actionEntry.override)
+    : []
+  const actionIsSwap =
+    !!actionEntry?.override?.swapGroupId && actionGroup.length === 2
+  const actionSwapIsCurrent = actionIsSwap
+    ? isSwapGroupCurrent(overrides ?? [], actionGroup)
+    : true
 
   return (
     <Box>
@@ -324,15 +401,26 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         >
           <Text variant="sm">
             {nameFor(actionEntry.effectiveEngineerId)} is covering{" "}
-            {nameFor(actionEntry.baseEngineerId)}&apos;s shift.
+            {nameFor(
+              actionEntry.override.originalEngineerId ??
+                actionEntry.baseEngineerId
+            )}
+            &apos;s shift.
           </Text>
           {actionEntry.override.reason && (
             <Text variant="xs" color="mono60" mt={0.5}>
               {actionEntry.override.reason}
             </Text>
           )}
+          {actionIsSwap && !actionSwapIsCurrent && (
+            <Text variant="xs" color="mono60" mt={1}>
+              A later swap has since covered part of this one — Modify and
+              Delete are unavailable here. Undo swaps newest-first, or add
+              another swap on top.
+            </Text>
+          )}
 
-          <Flex justifyContent="flex-end" gap={1} mt={2}>
+          <Flex justifyContent="flex-end" gap={1} mt={2} flexWrap="wrap">
             <Button
               variant="secondaryBlack"
               onClick={() => setActionEntry(null)}
@@ -340,14 +428,23 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
             >
               Cancel
             </Button>
+            {actionIsSwap && (
+              <Button variant="secondaryBlack" onClick={startAddSwap}>
+                Add swap
+              </Button>
+            )}
             <Button
               variant="secondaryNeutral"
               onClick={handleDeleteAction}
               loading={deleting}
+              disabled={!actionSwapIsCurrent}
             >
               Delete
             </Button>
-            <Button onClick={startModify} disabled={deleting}>
+            <Button
+              onClick={startModify}
+              disabled={deleting || !actionSwapIsCurrent}
+            >
               Modify
             </Button>
           </Flex>
@@ -369,7 +466,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         <SwapModal
           rotationId={rotationId}
           engineers={engineers ?? []}
-          entries={entries}
+          entries={editingSwap.entries}
           timezone={rotation.timezone}
           isOpen
           initialValues={editingSwap.prefill}

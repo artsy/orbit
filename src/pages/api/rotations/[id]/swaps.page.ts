@@ -63,20 +63,33 @@ export default async function handler(
     include: { engineer: true },
   })
 
+  // Needed so the swap is validated (and its `originalEngineerId` recorded)
+  // against who is *actually* on call, not just the base round-robin — this
+  // is what lets a swap chain correctly off an earlier override/swap.
+  const existingOverrides = await prisma.override.findMany({
+    where: { rotationId },
+    orderBy: { createdAt: "asc" },
+  })
+
   const serializedRotation = serializeRotation(rotation)
   const serializedMembers = members.map(serializeMember)
 
   const swapGroupId = crypto.randomUUID()
 
-  const [overrideForA, overrideForB] = buildSwap(
-    serializedRotation,
-    serializedMembers,
-    body.engineerAId,
-    body.engineerBId,
+  const result = buildSwap({
+    rotation: serializedRotation,
+    members: serializedMembers,
+    overrides: existingOverrides.map(serializeOverride),
+    engineerAId: body.engineerAId,
+    engineerBId: body.engineerBId,
     dateA,
     dateB,
-    swapGroupId
-  )
+    swapGroupId,
+  })
+
+  if (!result.ok) return sendError(res, 400, result.error)
+
+  const [overrideForA, overrideForB] = result.overrides
 
   const created = await prisma.$transaction(async (tx) => {
     const createdA = await tx.override.create({
