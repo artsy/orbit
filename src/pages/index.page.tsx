@@ -51,6 +51,11 @@ export default function HomePage() {
                   ? "Biweekly"
                   : `Every ${rotation.cadenceDays} days`
 
+              const rotationLabel =
+                rotation.kind === "turn"
+                  ? "Turn-based rotation"
+                  : `${cadenceLabel} rotation`
+
               return (
                 <Box
                   key={rotation.id}
@@ -73,7 +78,7 @@ export default function HomePage() {
                       </Link>
 
                       <Text variant="xs" color="mono60">
-                        {cadenceLabel} rotation
+                        {rotationLabel}
                       </Text>
                     </Box>
 

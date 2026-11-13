@@ -1,11 +1,14 @@
 import { Box, Button, Flex, Input, Select, useToasts } from "@artsy/palette"
 import { Form, Formik } from "formik"
 import * as Yup from "yup"
-import { Engineer, Override } from "rotations/types"
+import { Engineer, Override, RotationKind } from "rotations/types"
 import { createOverride, updateOverride } from "utils/api/mutations"
+import { useMembers } from "utils/hooks/useApi"
 
 export interface OverrideFormProps {
   rotationId: string
+  /** Turn rotations also ask which engineer's turn is being covered. */
+  rotationKind?: RotationKind
   engineers: Engineer[]
   /** When provided, the form edits this override instead of creating one. */
   override?: Override
@@ -14,6 +17,7 @@ export interface OverrideFormProps {
 }
 
 interface OverrideFormValues {
+  originalEngineerId: string
   replacementEngineerId: string
   startDate: string
   endDate: string
@@ -39,8 +43,15 @@ const validationSchema = Yup.object().shape({
   reason: Yup.string(),
 })
 
+const turnValidationSchema = validationSchema.shape({
+  originalEngineerId: Yup.string().required(
+    "The engineer being covered is required"
+  ),
+})
+
 export const OverrideForm: React.FC<OverrideFormProps> = ({
   rotationId,
+  rotationKind,
   engineers,
   override,
   onDone,
@@ -54,17 +65,31 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
   }))
 
   const isEditing = !!override
+  const isTurn = rotationKind === "turn"
+
+  const { data: members } = useMembers(isTurn ? rotationId : undefined)
+  const coveredOptions = [
+    { value: "", text: "Select an engineer…" },
+    ...engineers
+      .filter(
+        (engineer) =>
+          engineer.id === override?.originalEngineerId ||
+          (members ?? []).some((member) => member.engineerId === engineer.id)
+      )
+      .map((engineer) => ({ value: engineer.id, text: engineer.name })),
+  ]
 
   return (
     <Formik<OverrideFormValues>
       enableReinitialize
       initialValues={{
+        originalEngineerId: override?.originalEngineerId ?? "",
         replacementEngineerId: override?.replacementEngineerId ?? "",
         startDate: override ? override.startDate.slice(0, 10) : "",
         endDate: override ? override.endDate.slice(0, 10) : "",
         reason: override?.reason ?? "",
       }}
-      validationSchema={validationSchema}
+      validationSchema={isTurn ? turnValidationSchema : validationSchema}
       onSubmit={async (values, { setSubmitting }) => {
         try {
           if (override) {
@@ -77,6 +102,7 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
             sendToast({ variant: "success", message: "Override updated" })
           } else {
             await createOverride(rotationId, {
+              ...(isTurn ? { originalEngineerId: values.originalEngineerId } : {}),
               replacementEngineerId: values.replacementEngineerId,
               startDate: values.startDate,
               endDate: values.endDate,
@@ -109,6 +135,19 @@ export const OverrideForm: React.FC<OverrideFormProps> = ({
         setFieldValue,
       }) => (
         <Box as={Form} display="flex" flexDirection="column" gap={2}>
+          {isTurn && (
+            <Select
+              name="originalEngineerId"
+              title="Engineer being covered"
+              options={coveredOptions}
+              selected={values.originalEngineerId}
+              disabled={isEditing}
+              onSelect={(value) => setFieldValue("originalEngineerId", value)}
+              onBlur={handleBlur}
+              error={touched.originalEngineerId && errors.originalEngineerId}
+            />
+          )}
+
           <Select
             name="replacementEngineerId"
             title="Replacement engineer"

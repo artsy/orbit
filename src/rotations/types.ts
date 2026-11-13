@@ -159,7 +159,8 @@ export type UpdateEngineerBody = Partial<CreateEngineerBody>
 export interface CreateRotationBody {
   name: string
   cadenceDays?: number
-  anchorDate: string
+  /** Required for "scheduled" rotations; turn rotations have no periods. */
+  anchorDate?: string
   timezone?: string
   description?: string | null
   kind?: RotationKind

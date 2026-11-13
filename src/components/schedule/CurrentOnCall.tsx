@@ -5,7 +5,13 @@ import { useSession } from "next-auth/react"
 import { FC, useMemo } from "react"
 import { Rotation } from "rotations/types"
 import { engineerColor } from "rotations/colors"
-import { useEngineers, useSchedule } from "utils/hooks/useApi"
+import { findNextUp } from "components/rotations/TurnOrder"
+import {
+  useEngineers,
+  useMembers,
+  useOverrides,
+  useSchedule,
+} from "utils/hooks/useApi"
 
 interface CurrentOnCallProps {
   rotation: Rotation
@@ -27,10 +33,49 @@ export const CurrentOnCall: FC<CurrentOnCallProps> = ({ rotation }) => {
     }
   }, [rotation.cadenceDays])
 
-  const { data: schedule } = useSchedule(rotation.id, start, end)
+  const isTurn = rotation.kind === "turn"
+
+  // Turn rotations have no schedule; an undefined id skips the request.
+  const { data: schedule } = useSchedule(
+    isTurn ? undefined : rotation.id,
+    start,
+    end
+  )
+  const { data: members } = useMembers(isTurn ? rotation.id : undefined)
+  const { data: overrides } = useOverrides(isTurn ? rotation.id : undefined)
   const { data: engineers } = useEngineers()
   const session = useSession()
   const myEmail = session.data?.user?.email
+
+  if (isTurn) {
+    if (!members || !overrides) return null
+
+    const nextUp = findNextUp(rotation, members, overrides, engineers ?? [])
+    if (!nextUp) {
+      return (
+        <Text variant="xs" color="mono60">
+          No one is next up.
+        </Text>
+      )
+    }
+
+    return (
+      <Flex alignItems="center" gap={0.5}>
+        <Box
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            flexShrink: 0,
+            backgroundColor: engineerColor(nextUp.engineerId),
+          }}
+        />
+        <Text variant="xs" color="mono60">
+          Next up: {nextUp.name}
+        </Text>
+      </Flex>
+    )
+  }
 
   if (!schedule) return null
 
