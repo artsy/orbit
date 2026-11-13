@@ -51,16 +51,20 @@ model TeamMember {
 }
 
 model Rotation {
-  id          String   @id @default(cuid())
-  name        String
+  id           String   @id @default(cuid())
+  name         String
   // Optional free-text description of the rotation's purpose.
-  description String?
+  description  String?
   // Length of one on-call period in days (weekly = 7).
-  cadenceDays Int      @default(7)
+  cadenceDays  Int      @default(7)
   // Start of period 0. The round-robin is computed relative to this instant.
-  anchorDate  DateTime
-  timezone    String   @default("America/New_York")
-  createdAt   DateTime @default(now())
+  anchorDate   DateTime
+  timezone     String   @default("America/New_York")
+  // "scheduled" (on-call periods) or "turn" (each submission goes to the next engineer).
+  kind         String   @default("scheduled")
+  // Turn rotations only: position of the member who is next up.
+  nextPosition Int      @default(0)
+  createdAt    DateTime @default(now())
 
   members   RotationMember[]
   overrides Override[]
