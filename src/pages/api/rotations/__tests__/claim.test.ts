@@ -166,7 +166,7 @@ describe("/api/rotations/[id]/claim", () => {
       },
     ])
 
-    const { req, res } = buildReq()
+    const { req, res } = buildReq({ body: { reference: "GF740" } })
     await handler(req, res)
 
     expect(res._getStatusCode()).toBe(200)
@@ -175,6 +175,10 @@ describe("/api/rotations/[id]/claim", () => {
       where: { id: "rotation-1" },
       data: { nextPosition: 2 },
     })
+    const { data } = mockEventCreate.mock.calls[0][0]
+    expect(data.summary).toBe(
+      'Assigned turn to Engineer C (covering Engineer B) on "Security bounty" (GF740)'
+    )
   })
 
   it("locks the rotation row before reading it", async () => {
@@ -211,6 +215,16 @@ describe("/api/rotations/[id]/claim", () => {
     const { data } = mockEventCreate.mock.calls[0][0]
     expect(data.summary).toBe(
       'Assigned turn to Engineer B on "Security bounty"'
+    )
+  })
+
+  it("caps the reference at 100 characters in the summary", async () => {
+    const { req, res } = buildReq({ body: { reference: "x".repeat(150) } })
+    await handler(req, res)
+
+    const { data } = mockEventCreate.mock.calls[0][0]
+    expect(data.summary).toBe(
+      `Assigned turn to Engineer B on "Security bounty" (${"x".repeat(100)})`
     )
   })
 })

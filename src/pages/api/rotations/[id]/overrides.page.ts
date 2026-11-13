@@ -63,6 +63,27 @@ export default async function handler(
         )
       }
 
+      if (rotation.kind === "turn" && body.originalEngineerId) {
+        if (body.originalEngineerId === body.replacementEngineerId) {
+          return sendError(
+            res,
+            400,
+            "replacement must differ from the engineer being covered"
+          )
+        }
+        const members = await prisma.rotationMember.findMany({
+          where: { rotationId },
+          select: { engineerId: true },
+        })
+        if (!members.some((m) => m.engineerId === body.originalEngineerId)) {
+          return sendError(
+            res,
+            400,
+            "originalEngineerId must be a member of this rotation"
+          )
+        }
+      }
+
       const startDate = new Date(body.startDate)
       const endDate = new Date(body.endDate)
       if (

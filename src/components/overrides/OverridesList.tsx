@@ -8,12 +8,14 @@ import { deleteOverride } from "utils/api/mutations"
 interface OverridesListProps {
   rotationId: string
   engineersById: Record<string, Engineer>
+  isTurn?: boolean
   onChange?: () => void
 }
 
 export const OverridesList: FC<OverridesListProps> = ({
   rotationId,
   engineersById,
+  isTurn = false,
   onChange,
 }) => {
   const { data: overrides, isLoading, mutate } = useOverrides(rotationId)
@@ -75,7 +77,9 @@ export const OverridesList: FC<OverridesListProps> = ({
                   </Pill>
                 </Flex>
                 <Text variant="xs" color="mono60">
-                  Covered by {nameFor(override.replacementEngineerId)}
+                  {isTurn && override.originalEngineerId
+                    ? `${nameFor(override.replacementEngineerId)} covering ${nameFor(override.originalEngineerId)}`
+                    : `Covered by ${nameFor(override.replacementEngineerId)}`}
                   {override.reason ? ` — ${override.reason}` : ""}
                 </Text>
               </Box>

@@ -17,6 +17,8 @@ import {
 } from "utils/api/serialize"
 import { ClaimTurnBody, ClaimTurnResponse } from "rotations/types"
 
+const MAX_REFERENCE_LENGTH = 100
+
 type ClaimResult =
   | { status: number; error: string }
   | { engineer: ClaimTurnResponse["engineer"] }
@@ -40,7 +42,9 @@ export default async function handler(
   const rotationId = req.query.id as string
   const body = req.body as Partial<ClaimTurnBody> | undefined
   const reference =
-    typeof body?.reference === "string" ? body.reference.trim() : ""
+    typeof body?.reference === "string"
+      ? body.reference.trim().slice(0, MAX_REFERENCE_LENGTH)
+      : ""
 
   const result = await prisma.$transaction(async (tx): Promise<ClaimResult> => {
     await tx.$queryRaw`SELECT id FROM "Rotation" WHERE id = ${rotationId} FOR UPDATE`
@@ -85,12 +89,17 @@ export default async function handler(
       data: { nextPosition: pick.nextPosition },
     })
 
+    const covered =
+      pick.effectiveEngineerId !== pick.baseEngineerId
+        ? members.find((m) => m.engineerId === pick.baseEngineerId)?.engineer
+        : undefined
+
     await recordEvent(tx, {
       action: "rotation.turn_claimed",
       actorEmail: user.email as string,
-      summary: `Assigned turn to ${effective.name} on "${rotation.name}"${
-        reference ? ` (${reference})` : ""
-      }`,
+      summary: `Assigned turn to ${effective.name}${
+        covered ? ` (covering ${covered.name})` : ""
+      } on "${rotation.name}"${reference ? ` (${reference})` : ""}`,
       rotationId: rotation.id,
       rotationName: rotation.name,
     })

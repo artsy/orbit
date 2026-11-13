@@ -13,7 +13,7 @@ export enum Role {
   team = "team",
   product_development = "product_development",
   // Non-human principal authenticated by a service token (see utils/auth).
-  // Read-only: granted `read` below, never `manage`.
+  // Read-only, except it may `claim` a turn; never `manage`.
   service = "service",
 }
 

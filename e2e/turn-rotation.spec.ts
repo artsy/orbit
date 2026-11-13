@@ -180,6 +180,9 @@ test.describe("turn-based rotations", () => {
     const rows = page.getByTestId("turn-order").getByRole("listitem")
     await expect(rows.nth(2)).toContainText("Next up")
     await expect(rows.nth(0)).not.toContainText("Next up")
+    await expect(
+      page.getByText("Test User covering Ada Lovelace")
+    ).toBeVisible()
   })
 
   test("requires the covered engineer when creating an override", async ({

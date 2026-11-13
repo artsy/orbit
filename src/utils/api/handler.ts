@@ -25,8 +25,8 @@ export async function requireUser(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<UserWithAccessToken | undefined> {
-  // A valid service token authenticates a read-only machine principal; fall
-  // back to the interactive session otherwise.
+  // A valid service token authenticates a machine principal (read-only, except
+  // claiming a turn); fall back to the interactive session otherwise.
   const serviceUser = getServiceUser(req)
   if (serviceUser) return serviceUser
 

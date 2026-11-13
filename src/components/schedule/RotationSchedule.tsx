@@ -124,7 +124,11 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     error: scheduleError,
     isLoading: scheduleLoading,
   } = useSchedule(rotation && !isTurn ? rotationId : undefined, start, end)
-  const { data: overrides, mutate: mutateOverrides } = useOverrides(rotationId)
+  const {
+    data: overrides,
+    error: overridesError,
+    mutate: mutateOverrides,
+  } = useOverrides(rotationId)
 
   const engineersById = useMemo<Record<string, Engineer>>(() => {
     const map: Record<string, Engineer> = {}
@@ -146,7 +150,12 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     )
   }
 
-  const error = rotationError || membersError || engineersError || scheduleError
+  const error =
+    rotationError ||
+    membersError ||
+    engineersError ||
+    scheduleError ||
+    overridesError
 
   if (error) {
     return (
@@ -534,6 +543,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
       <OverridesList
         rotationId={rotationId}
         engineersById={engineersById}
+        isTurn={isTurn}
         onChange={handleDone}
       />
 
