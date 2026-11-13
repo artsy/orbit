@@ -64,8 +64,8 @@ DB or clock access, so the server and the browser's "Next up" marker share one
 implementation. The claim runs in a transaction that locks the `Rotation` row
 (`SELECT ... FOR UPDATE`), so concurrent claims take turns instead of picking the
 same engineer. Replacing the member list takes the same lock. A `turn` rotation
-has no overrides or swaps, so the pick is the member at `nextPosition` and
-nothing else.
+has no overrides or swaps, so the pick is the next active member at or after
+`nextPosition`, wrapping to the start of the order.
 
 ## Auth & permissions
 

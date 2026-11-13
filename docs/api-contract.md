@@ -50,9 +50,9 @@ schedule and do the date math. `OnCallResponse` is
 
 `POST /api/rotations/[id]/claim` hands the next turn of a `turn` rotation to the
 next active member in order and advances `nextPosition`. It needs the `claim`
-action (`Action.claim`), which both `team` and `service` hold. `ClaimTurnBody` is `{ reference?: string }`, a free-text label
-such as a ticket id that goes into the Event Log summary (capped at 100
-characters). `ClaimTurnResponse` is
+action (`Action.claim`), which both `team` and `service` hold. `ClaimTurnBody`
+is `{ reference?: string }`, a free-text label such as a ticket id that goes
+into the Event Log summary (capped at 100 characters). `ClaimTurnResponse` is
 `{ engineer: Engineer }`. Returns `400` for a `scheduled` rotation and `409`
 when no member is active. The rotation row is locked for the duration, so
 concurrent claims never pick the same engineer.
