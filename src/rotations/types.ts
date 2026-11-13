@@ -23,6 +23,8 @@ export interface Engineer {
   createdAt: string
 }
 
+export type RotationKind = "scheduled" | "turn"
+
 export interface Rotation {
   id: string
   name: string
@@ -32,6 +34,10 @@ export interface Rotation {
   anchorDate: string
   timezone: string
   description: string | null
+  /** "turn" rotations hand each new item to the next member instead of using periods. */
+  kind: RotationKind
+  /** Turn rotations only: position of the member who is next up. */
+  nextPosition: number
   createdAt: string
 }
 
@@ -153,16 +159,28 @@ export type UpdateEngineerBody = Partial<CreateEngineerBody>
 export interface CreateRotationBody {
   name: string
   cadenceDays?: number
-  anchorDate: string
+  /** Required for "scheduled" rotations; turn rotations have no periods. */
+  anchorDate?: string
   timezone?: string
   description?: string | null
+  kind?: RotationKind
 }
 
-export type UpdateRotationBody = Partial<CreateRotationBody>
+export type UpdateRotationBody = Partial<Omit<CreateRotationBody, "kind">>
 
 /** Replace the full ordered membership of a rotation. `engineerIds[i]` gets position `i`. */
 export interface SetMembersBody {
   engineerIds: string[]
+}
+
+/** Hand the next turn of a "turn" rotation to the next engineer in order. */
+export interface ClaimTurnBody {
+  /** Free-text label for what is being assigned, such as a ticket id. */
+  reference?: string
+}
+
+export interface ClaimTurnResponse {
+  engineer: Engineer
 }
 
 export interface CreateTeamBody {

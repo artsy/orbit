@@ -53,8 +53,8 @@ descriptions):
 - `NEXTAUTH_URL` (the public URL of the environment) and `NEXTAUTH_SECRET`
 - `CLIENT_APPLICATION_ID` / `CLIENT_APPLICATION_SECRET` (Gravity OAuth)
 - `GRAVITY_URL` and `PUBLIC_GRAVITY_URL`
-- `ORBIT_SERVICE_TOKENS` (optional — read-only bearer tokens for headless
-  clients such as [release-lookout](https://github.com/artsy/release-lookout))
+- `ORBIT_SERVICE_TOKENS` (optional — bearer tokens for headless clients such as [release-lookout](https://github.com/artsy/release-lookout);
+  read-only, except claiming a turn on a turn-based rotation)
 
 ## One-time setup
 

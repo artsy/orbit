@@ -8,6 +8,7 @@ import {
   requireUser,
   sendError,
 } from "utils/api/handler"
+import { carryNextPosition } from "rotations/logic"
 import { serializeMember } from "utils/api/serialize"
 import { recordEvent } from "utils/api/events"
 import { RotationMember, SetMembersBody } from "rotations/types"
@@ -54,6 +55,24 @@ export default async function handler(
       const { engineerIds } = body as SetMembersBody
 
       const members = await prisma.$transaction(async (tx) => {
+        let nextPosition: number | undefined
+        if (rotation.kind === "turn") {
+          await tx.$queryRaw`SELECT id FROM "Rotation" WHERE id = ${rotationId} FOR UPDATE`
+          const locked = await tx.rotation.findUnique({
+            where: { id: rotationId },
+          })
+          const oldMembers = await tx.rotationMember.findMany({
+            where: { rotationId },
+            orderBy: { position: "asc" },
+            include: { engineer: true },
+          })
+          nextPosition = carryNextPosition(
+            oldMembers.map(serializeMember),
+            locked?.nextPosition ?? 0,
+            engineerIds
+          )
+        }
+
         await tx.rotationMember.deleteMany({ where: { rotationId } })
 
         await tx.rotationMember.createMany({
@@ -63,6 +82,13 @@ export default async function handler(
             position,
           })),
         })
+
+        if (nextPosition !== undefined) {
+          await tx.rotation.update({
+            where: { id: rotationId },
+            data: { nextPosition },
+          })
+        }
 
         await recordEvent(tx, {
           action: "membership.updated",

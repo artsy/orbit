@@ -34,11 +34,18 @@ export default async function handler(
       if (!requirePermission(res, user, "rotations", Action.manage)) return
 
       const body = req.body as Partial<CreateRotationBody>
-      if (!body?.name || !body?.anchorDate) {
+      const kind = body?.kind ?? "scheduled"
+      if (kind !== "scheduled" && kind !== "turn") {
+        return sendError(res, 400, "kind must be scheduled or turn")
+      }
+
+      if (!body?.name || (kind === "scheduled" && !body.anchorDate)) {
         return sendError(res, 400, "name and anchorDate are required")
       }
 
-      const anchorDate = new Date(body.anchorDate)
+      const anchorDate = body.anchorDate
+        ? new Date(body.anchorDate)
+        : new Date()
       if (Number.isNaN(anchorDate.getTime())) {
         return sendError(res, 400, "anchorDate must be a valid ISO date")
       }
@@ -54,6 +61,7 @@ export default async function handler(
       const rotation = await prisma.rotation.create({
         data: {
           name: body.name,
+          kind,
           anchorDate,
           cadenceDays: body.cadenceDays ?? 7,
           ...(body.timezone !== undefined ? { timezone: body.timezone } : {}),

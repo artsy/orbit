@@ -1,0 +1,2 @@
+ALTER TABLE "Rotation" ADD COLUMN "kind" TEXT NOT NULL DEFAULT 'scheduled';
+ALTER TABLE "Rotation" ADD COLUMN "nextPosition" INTEGER NOT NULL DEFAULT 0;

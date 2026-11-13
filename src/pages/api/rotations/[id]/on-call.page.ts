@@ -45,6 +45,9 @@ export default async function handler(
     where: { id: rotationId },
   })
   if (!rotation) return sendError(res, 404, "Rotation not found")
+  if (rotation.kind === "turn") {
+    return sendError(res, 400, "turn-based rotation has no schedule")
+  }
 
   const now = new Date()
   // A window that always contains the current period and the next one.
@@ -99,7 +102,7 @@ export default async function handler(
     entry
       ? {
           engineer: entry.effectiveEngineerId
-            ? engineerById.get(entry.effectiveEngineerId) ?? null
+            ? (engineerById.get(entry.effectiveEngineerId) ?? null)
             : null,
           periodStart: entry.periodStart,
           periodEnd: entry.periodEnd,

@@ -45,6 +45,9 @@ export default async function handler(
         where: { id: rotationId },
       })
       if (!rotation) return sendError(res, 404, "Rotation not found")
+      if (rotation.kind === "turn") {
+        return sendError(res, 400, "turn-based rotation has no overrides")
+      }
 
       const body = req.body as Partial<CreateOverrideBody>
       if (!body?.startDate || !body?.endDate || !body?.replacementEngineerId) {

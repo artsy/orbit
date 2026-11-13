@@ -40,6 +40,7 @@ import {
 import { SwapFormValues } from "components/overrides/SwapForm"
 import { OverridesList } from "components/overrides/OverridesList"
 import { MembersEditor } from "components/members/MembersEditor"
+import { TurnOrder } from "components/rotations/TurnOrder"
 import { ScheduleTable } from "./ScheduleTable"
 
 // FullCalendar touches the DOM, so load it client-side only.
@@ -69,7 +70,11 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     isLoading: rotationLoading,
     mutate: mutateRotation,
   } = useRotation(rotationId)
-  const { error: membersError, mutate: mutateMembers } = useMembers(rotationId)
+  const {
+    data: members,
+    error: membersError,
+    mutate: mutateMembers,
+  } = useMembers(rotationId)
   const { data: engineers, error: engineersError } = useEngineers()
   const { mutate: globalMutate } = useSWRConfig()
   const { sendToast } = useToasts()
@@ -110,12 +115,20 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     }
   }, [cadenceDays])
 
+  const isTurn = rotation?.kind === "turn"
+
+  // Turn rotations have no schedule (the endpoint returns 400); an undefined id
+  // makes useApi skip the request. Wait for the rotation so its kind is known.
   const {
     data: schedule,
     error: scheduleError,
     isLoading: scheduleLoading,
-  } = useSchedule(rotationId, start, end)
-  const { data: overrides, mutate: mutateOverrides } = useOverrides(rotationId)
+  } = useSchedule(rotation && !isTurn ? rotationId : undefined, start, end)
+  const {
+    data: overrides,
+    error: overridesError,
+    mutate: mutateOverrides,
+  } = useOverrides(rotation && !isTurn ? rotationId : undefined)
 
   const engineersById = useMemo<Record<string, Engineer>>(() => {
     const map: Record<string, Engineer> = {}
@@ -137,7 +150,12 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     )
   }
 
-  const error = rotationError || membersError || engineersError || scheduleError
+  const error =
+    rotationError ||
+    membersError ||
+    engineersError ||
+    scheduleError ||
+    overridesError
 
   if (error) {
     return (
@@ -147,7 +165,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
     )
   }
 
-  if (rotationLoading || scheduleLoading || !rotation) {
+  if (rotationLoading || scheduleLoading || !rotation || (isTurn && !members)) {
     return (
       <Flex justifyContent="center" py={4}>
         <Spinner />
@@ -168,6 +186,8 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
   const handleDone = () => {
     mutateOverrides()
     mutateMembers()
+    // Replacing members moves a turn rotation's nextPosition.
+    if (isTurn) mutateRotation()
     // Revalidate every schedule window for this rotation — the list and the
     // calendar use different SWR keys (different date ranges), so a single
     // mutateSchedule() would miss the calendar's view.
@@ -229,17 +249,17 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
       const baselineOverrides = (overrides ?? []).filter(
         (o) => !groupIds.includes(o.id)
       )
-      const members = schedule?.members ?? []
+      const scheduleMembers = schedule?.members ?? []
       const [first, second] = group
       const entryA = effectiveAssignmentForDate(
         rotation,
-        members,
+        scheduleMembers,
         baselineOverrides,
         parseISO(first.startDate)
       )
       const entryB = effectiveAssignmentForDate(
         rotation,
-        members,
+        scheduleMembers,
         baselineOverrides,
         parseISO(second.startDate)
       )
@@ -262,7 +282,7 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
       )
       const baselineEntries = getScheduleForRange(
         rotation,
-        members,
+        scheduleMembers,
         baselineOverrides,
         windowStart,
         windowEnd
@@ -337,21 +357,27 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
           {rotation.description}
         </Text>
       )}
-      <Text variant="sm" color="mono60" mt={0.5}>
-        {currentEngineer
-          ? `Currently on-call: ${currentEngineer.name}`
-          : "No one is currently on-call."}
-      </Text>
+      {!isTurn && (
+        <Text variant="sm" color="mono60" mt={0.5}>
+          {currentEngineer
+            ? `Currently on-call: ${currentEngineer.name}`
+            : "No one is currently on-call."}
+        </Text>
+      )}
 
       <Flex gap={1} my={2} flexWrap="wrap">
-        <CreateOverrideButton rotationId={rotationId} onDone={handleDone} />
-        <CreateSwapButton
-          rotationId={rotationId}
-          engineers={engineers ?? []}
-          entries={entries}
-          timezone={rotation.timezone}
-          onDone={handleDone}
-        />
+        {!isTurn && (
+          <>
+            <CreateOverrideButton rotationId={rotationId} onDone={handleDone} />
+            <CreateSwapButton
+              rotationId={rotationId}
+              engineers={engineers ?? []}
+              entries={entries}
+              timezone={rotation.timezone}
+              onDone={handleDone}
+            />
+          </>
+        )}
         <Button variant="secondaryBlack" onClick={() => setEditOpen(true)}>
           Edit rotation
         </Button>
@@ -385,13 +411,17 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         initialValues={swapPrefill}
       />
 
-      <RotationCalendar
-        rotationId={rotationId}
-        timezone={rotation.timezone}
-        engineersById={engineersById}
-        onSwapRequest={handleRowClick}
-        onOverrideAction={handleOverrideAction}
-      />
+      {isTurn ? (
+        <TurnOrder rotation={rotation} members={members ?? []} />
+      ) : (
+        <RotationCalendar
+          rotationId={rotationId}
+          timezone={rotation.timezone}
+          engineersById={engineersById}
+          onSwapRequest={handleRowClick}
+          onOverrideAction={handleOverrideAction}
+        />
+      )}
 
       {actionEntry?.override && (
         <ModalDialog
@@ -476,29 +506,33 @@ export const RotationSchedule: FC<RotationScheduleProps> = ({ rotationId }) => {
         />
       )}
 
-      <Spacer y={4} />
+      {!isTurn && (
+        <>
+          <Spacer y={4} />
 
-      <Text variant="md">Schedule list</Text>
-      <Text variant="xs" color="mono60">
-        Tap on a row to swap
-      </Text>
-      <Spacer y={1} />
-      <ScheduleTable
-        entries={entries}
-        engineersById={engineersById}
-        timezone={rotation.timezone}
-        onRowClick={handleRowClick}
-      />
+          <Text variant="md">Schedule list</Text>
+          <Text variant="xs" color="mono60">
+            Tap on a row to swap
+          </Text>
+          <Spacer y={1} />
+          <ScheduleTable
+            entries={entries}
+            engineersById={engineersById}
+            timezone={rotation.timezone}
+            onRowClick={handleRowClick}
+          />
 
-      <Spacer y={4} />
-      <Separator />
-      <Spacer y={4} />
+          <Spacer y={4} />
+          <Separator />
+          <Spacer y={4} />
 
-      <OverridesList
-        rotationId={rotationId}
-        engineersById={engineersById}
-        onChange={handleDone}
-      />
+          <OverridesList
+            rotationId={rotationId}
+            engineersById={engineersById}
+            onChange={handleDone}
+          />
+        </>
+      )}
 
       <Spacer y={4} />
       <Separator />
