@@ -144,4 +144,21 @@ describe("/api/rotations/[id]/schedule", () => {
     expect(data.entries[0].baseEngineerId).toBe("eng-a")
     expect(data.entries[0].effectiveEngineerId).toBe("eng-a")
   })
+
+  it("returns 400 for a turn rotation", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockRotationFindUnique.mockResolvedValue({ ...ROTATION, kind: "turn" })
+
+    const { req, res } = buildReq({
+      start: "2026-01-05T00:00:00.000Z",
+      end: "2026-01-12T00:00:00.000Z",
+    })
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(400)
+    expect((res._getJSONData() as any).error).toBe(
+      "turn-based rotation has no schedule"
+    )
+    expect(mockMemberFindMany).not.toHaveBeenCalled()
+  })
 })

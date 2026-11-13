@@ -55,6 +55,14 @@ export default async function handler(
         )
       }
 
+      if (rotation.kind === "turn" && !body.originalEngineerId) {
+        return sendError(
+          res,
+          400,
+          "originalEngineerId is required for turn-based rotations"
+        )
+      }
+
       const startDate = new Date(body.startDate)
       const endDate = new Date(body.endDate)
       if (

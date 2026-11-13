@@ -121,6 +121,26 @@ and the earlier one becomes editable again.
 (Tapping the bar of a normal, unchanged period still opens the "swap with me"
 suggestion instead.)
 
+## Turn-based rotations
+
+A `turn` rotation has no weekly periods, so there are no swaps and
+`POST /api/rotations/<rotationId>/swaps` returns `400`. An override still
+works, with one difference: `originalEngineerId` is required. The override
+covers that engineer's turns on the dates in its range, so a claim that lands
+on them goes to `replacementEngineerId` instead.
+
+```sh
+curl -X POST http://localhost:3000/api/rotations/<rotationId>/overrides \
+  -H "Content-Type: application/json" \
+  -H "Cookie: <your-session-cookie>" \
+  -d '{
+    "startDate": "2026-08-03T00:00:00.000Z",
+    "endDate": "2026-08-09T00:00:00.000Z",
+    "originalEngineerId": "<engineerId>",
+    "replacementEngineerId": "<coveringEngineerId>"
+  }'
+```
+
 ## Viewing the result
 
 The schedule table on `/rotations/<rotationId>` marks any changed period with an

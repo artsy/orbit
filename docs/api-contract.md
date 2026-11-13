@@ -58,6 +58,23 @@ such as a ticket id that goes into the Event Log summary. `ClaimTurnResponse` is
 when no member is active. The rotation row is locked for the duration, so
 concurrent claims never pick the same engineer.
 
+`POST /api/rotations` takes an optional `kind` of `scheduled` (the default) or
+`turn`; any other value returns `400`. `anchorDate` is required for `scheduled`
+rotations. A `turn` rotation created without one stores `anchorDate` as the
+creation time. `kind` cannot change after creation, so `PATCH` ignores it.
+
+A `turn` rotation has no schedule. These endpoints return `400` for one:
+
+| Route | Error |
+|---|---|
+| `GET /api/rotations/[id]/on-call` | `turn-based rotation has no schedule` |
+| `GET /api/rotations/[id]/schedule` | `turn-based rotation has no schedule` |
+| `POST /api/rotations/[id]/swaps` | `turn-based rotation has no swaps` |
+
+`POST /api/rotations/[id]/overrides` on a `turn` rotation requires
+`originalEngineerId` and returns `400` with
+`originalEngineerId is required for turn-based rotations` without it.
+
 A `Rotation` includes an optional `description` (string, nullable) — free-text
 notes on the rotation's purpose. Both `CreateRotationBody` and
 `UpdateRotationBody` accept an optional `description`.
@@ -71,6 +88,9 @@ notes on the rotation's purpose. Both `CreateRotationBody` and
 |---|---|---|---|
 | GET | `/api/rotations/[id]/members` | — | `RotationMember[]` (ordered by `position`, `engineer` populated) |
 | PUT | `/api/rotations/[id]/members` | `SetMembersBody` | `RotationMember[]` (replaces full ordered membership) |
+
+On a `turn` rotation, `PUT` locks the rotation row and moves `nextPosition` so
+the engineer who was next up keeps the turn (or the nearest later member does).
 
 ## Schedule — domain `rotations`
 
