@@ -185,7 +185,7 @@ test.describe("turn-based rotations", () => {
   test("requires the covered engineer when creating an override", async ({
     page,
   }) => {
-    await mockTurnRotation(page, {
+    const state = await mockTurnRotation(page, {
       members: [memberFor("e1", 0), memberFor("e2", 1)],
     })
 
@@ -198,8 +198,11 @@ test.describe("turn-based rotations", () => {
     await modal.locator('input[name="endDate"]').fill(today)
     await modal.getByRole("button", { name: "Create override" }).click()
 
+    await expect(
+      modal.getByText("The engineer being covered is required")
+    ).toBeVisible()
     await expect(modal).toBeVisible()
-    await expect(modal.getByText(/engineer being covered/i).last()).toBeVisible()
+    expect(state.lastOverridePost).toBeNull()
   })
 
   test("edit modal hides cadence and anchor fields and never sends kind", async ({
