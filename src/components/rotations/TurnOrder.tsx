@@ -1,50 +1,36 @@
 import { Box, Flex, Pill, Text } from "@artsy/palette"
 import { FC } from "react"
-import { pickNextTurn, todayInTimezone } from "rotations/logic"
-import { Engineer, Override, Rotation, RotationMember } from "rotations/types"
+import { pickNextTurn } from "rotations/logic"
+import { Engineer, Rotation, RotationMember } from "rotations/types"
 import { useEngineers } from "utils/hooks/useApi"
 
-/**
- * Who is next up. The effective engineer can be an override's replacement who
- * is not a member, so the name comes from the engineers list or the override.
- */
 export const findNextUp = (
   rotation: Rotation,
   members: RotationMember[],
-  overrides: Override[],
   engineers: Engineer[]
 ): { engineerId: string; name: string } | null => {
-  const pick = pickNextTurn(
-    members,
-    rotation.nextPosition,
-    overrides,
-    todayInTimezone(rotation.timezone, new Date())
-  )
+  const pick = pickNextTurn(members, rotation.nextPosition)
   if (!pick) return null
 
-  const id = pick.effectiveEngineerId
   const engineer =
-    engineers.find((e) => e.id === id) ??
-    members.find((m) => m.engineerId === id)?.engineer ??
-    overrides.find((o) => o.replacementEngineerId === id)?.replacementEngineer
+    engineers.find((e) => e.id === pick.engineerId) ??
+    members.find((m) => m.engineerId === pick.engineerId)?.engineer
 
-  return { engineerId: id, name: engineer?.name ?? "Unknown engineer" }
+  return {
+    engineerId: pick.engineerId,
+    name: engineer?.name ?? "Unknown engineer",
+  }
 }
 
 interface TurnOrderProps {
   rotation: Rotation
   members: RotationMember[]
-  overrides: Override[]
 }
 
-export const TurnOrder: FC<TurnOrderProps> = ({
-  rotation,
-  members,
-  overrides,
-}) => {
+export const TurnOrder: FC<TurnOrderProps> = ({ rotation, members }) => {
   const { data: engineers } = useEngineers()
 
-  const nextUp = findNextUp(rotation, members, overrides, engineers ?? [])
+  const nextUp = findNextUp(rotation, members, engineers ?? [])
   const ordered = [...members].sort((a, b) => a.position - b.position)
 
   return (
@@ -72,7 +58,9 @@ export const TurnOrder: FC<TurnOrderProps> = ({
                 </Text>
                 <Text
                   variant="sm"
-                  color={member.engineer?.active === false ? "mono60" : "mono100"}
+                  color={
+                    member.engineer?.active === false ? "mono60" : "mono100"
+                  }
                 >
                   {member.engineer?.name ?? "Unknown engineer"}
                   {member.engineer?.active === false ? " (inactive)" : ""}

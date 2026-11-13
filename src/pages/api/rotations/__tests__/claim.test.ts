@@ -22,14 +22,12 @@ const mockQueryRaw = jest.fn()
 const mockRotationFindUnique = jest.fn()
 const mockRotationUpdate = jest.fn()
 const mockMemberFindMany = jest.fn()
-const mockOverrideFindMany = jest.fn()
 const mockEventCreate = jest.fn()
 
 const tx = {
   $queryRaw: mockQueryRaw,
   rotation: { findUnique: mockRotationFindUnique, update: mockRotationUpdate },
   rotationMember: { findMany: mockMemberFindMany },
-  override: { findMany: mockOverrideFindMany },
   event: { create: mockEventCreate },
 }
 
@@ -63,7 +61,6 @@ const engineer = (id: string, name: string, active = true) => ({
 
 const ENGINEER_A = engineer("eng-a", "Engineer A")
 const ENGINEER_B = engineer("eng-b", "Engineer B")
-const ENGINEER_C = engineer("eng-c", "Engineer C")
 
 const member = (position: number, eng: ReturnType<typeof engineer>) => ({
   id: `member-${position}`,
@@ -91,7 +88,6 @@ beforeEach(() => {
   mockQueryRaw.mockResolvedValue([{ id: "rotation-1" }])
   mockRotationFindUnique.mockResolvedValue(ROTATION)
   mockMemberFindMany.mockResolvedValue(MEMBERS)
-  mockOverrideFindMany.mockResolvedValue([])
 })
 
 describe("/api/rotations/[id]/claim", () => {
@@ -147,38 +143,6 @@ describe("/api/rotations/[id]/claim", () => {
       where: { id: "rotation-1" },
       data: { nextPosition: 2 },
     })
-  })
-
-  it("returns the override replacement even when they are not a member", async () => {
-    mockOverrideFindMany.mockResolvedValue([
-      {
-        id: "override-1",
-        rotationId: "rotation-1",
-        startDate: new Date("2000-01-01T00:00:00.000Z"),
-        endDate: new Date("2100-01-01T00:00:00.000Z"),
-        replacementEngineerId: "eng-c",
-        originalEngineerId: "eng-b",
-        reason: null,
-        createdByEmail: "ada@artsy.net",
-        swapGroupId: null,
-        createdAt: new Date("2020-01-01T00:00:00.000Z"),
-        replacementEngineer: ENGINEER_C,
-      },
-    ])
-
-    const { req, res } = buildReq({ body: { reference: "GF740" } })
-    await handler(req, res)
-
-    expect(res._getStatusCode()).toBe(200)
-    expect((res._getJSONData() as any).engineer.id).toBe("eng-c")
-    expect(mockRotationUpdate).toHaveBeenCalledWith({
-      where: { id: "rotation-1" },
-      data: { nextPosition: 2 },
-    })
-    const { data } = mockEventCreate.mock.calls[0][0]
-    expect(data.summary).toBe(
-      'Assigned turn to Engineer C (covering Engineer B) on "Security bounty" (GF740)'
-    )
   })
 
   it("locks the rotation row before reading it", async () => {

@@ -1,11 +1,6 @@
 import { Button, ModalDialog } from "@artsy/palette"
 import { useEffect, useState } from "react"
-import {
-  Engineer,
-  Override,
-  RotationKind,
-  ScheduleEntry,
-} from "rotations/types"
+import { Engineer, Override, ScheduleEntry } from "rotations/types"
 import { OverrideForm } from "./OverrideForm"
 import { SwapForm, SwapFormValues } from "./SwapForm"
 
@@ -35,13 +30,11 @@ function useEngineers(): Engineer[] {
 
 export interface CreateOverrideButtonProps {
   rotationId: string
-  rotationKind?: RotationKind
   onDone?: () => void
 }
 
 export const CreateOverrideButton: React.FC<CreateOverrideButtonProps> = ({
   rotationId,
-  rotationKind,
   onDone,
 }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -59,7 +52,6 @@ export const CreateOverrideButton: React.FC<CreateOverrideButtonProps> = ({
         >
           <OverrideForm
             rotationId={rotationId}
-            rotationKind={rotationKind}
             engineers={engineers}
             onCancel={() => setIsOpen(false)}
             onDone={() => {
@@ -124,7 +116,6 @@ export const SwapModal: React.FC<SwapModalProps> = ({
 
 export interface OverrideModalProps {
   rotationId: string
-  rotationKind?: RotationKind
   engineers: Engineer[]
   override: Override
   isOpen: boolean
@@ -134,7 +125,6 @@ export interface OverrideModalProps {
 
 export const OverrideModal: React.FC<OverrideModalProps> = ({
   rotationId,
-  rotationKind,
   engineers,
   override,
   isOpen,
@@ -147,7 +137,6 @@ export const OverrideModal: React.FC<OverrideModalProps> = ({
     <ModalDialog title="Edit override" onClose={onClose} width={["100%", 500]}>
       <OverrideForm
         rotationId={rotationId}
-        rotationKind={rotationKind}
         engineers={engineers}
         override={override}
         onCancel={onClose}

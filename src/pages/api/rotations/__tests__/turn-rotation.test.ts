@@ -37,7 +37,6 @@ const mockRotationFindUnique = prisma.rotation.findUnique as jest.Mock
 const mockRotationCreate = prisma.rotation.create as jest.Mock
 const mockRotationUpdate = prisma.rotation.update as jest.Mock
 const mockOverrideCreate = prisma.override.create as jest.Mock
-const mockMemberFindMany = prisma.rotationMember.findMany as jest.Mock
 const mockTransaction = prisma.$transaction as jest.Mock
 
 const mockQueryRaw = jest.fn()
@@ -242,61 +241,14 @@ describe("POST /api/rotations/[id]/overrides", () => {
     })
   })
 
-  it("requires originalEngineerId on a turn rotation", async () => {
+  it("returns 400 for a turn rotation", async () => {
     mockRotationFindUnique.mockResolvedValue(TURN)
 
     const res = await call(overridesHandler, "POST", body)
 
     expect(res._getStatusCode()).toBe(400)
     expect((res._getJSONData() as any).error).toBe(
-      "originalEngineerId is required for turn-based rotations"
-    )
-    expect(mockOverrideCreate).not.toHaveBeenCalled()
-  })
-
-  it("accepts originalEngineerId on a turn rotation", async () => {
-    mockRotationFindUnique.mockResolvedValue(TURN)
-    mockMemberFindMany.mockResolvedValue([member(0, "eng-a")])
-
-    const res = await call(overridesHandler, "POST", {
-      ...body,
-      originalEngineerId: "eng-a",
-    })
-
-    expect(res._getStatusCode()).toBe(201)
-    expect(mockOverrideCreate.mock.calls[0][0].data.originalEngineerId).toBe(
-      "eng-a"
-    )
-  })
-
-  it("rejects an originalEngineerId that is not a member of the turn rotation", async () => {
-    mockRotationFindUnique.mockResolvedValue(TURN)
-    mockMemberFindMany.mockResolvedValue([member(0, "eng-a")])
-
-    const res = await call(overridesHandler, "POST", {
-      ...body,
-      originalEngineerId: "eng-z",
-    })
-
-    expect(res._getStatusCode()).toBe(400)
-    expect((res._getJSONData() as any).error).toBe(
-      "originalEngineerId must be a member of this rotation"
-    )
-    expect(mockOverrideCreate).not.toHaveBeenCalled()
-  })
-
-  it("rejects a replacement who is the engineer being covered", async () => {
-    mockRotationFindUnique.mockResolvedValue(TURN)
-    mockMemberFindMany.mockResolvedValue([member(0, "eng-b")])
-
-    const res = await call(overridesHandler, "POST", {
-      ...body,
-      originalEngineerId: "eng-b",
-    })
-
-    expect(res._getStatusCode()).toBe(400)
-    expect((res._getJSONData() as any).error).toBe(
-      "replacement must differ from the engineer being covered"
+      "turn-based rotation has no overrides"
     )
     expect(mockOverrideCreate).not.toHaveBeenCalled()
   })

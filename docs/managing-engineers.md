@@ -142,4 +142,5 @@ reorders the rotation.
 
 On a turn-based rotation, editing the member list keeps whoever is next up: if
 that engineer is still in the list they stay next, and if you removed them the
-next engineer after them in the old order takes the turn.
+next engineer after them in the old order takes the turn. A turn-based rotation
+has no overrides or swaps; to skip someone, mark them inactive or remove them.

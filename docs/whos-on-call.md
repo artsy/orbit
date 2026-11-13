@@ -59,8 +59,8 @@ to `@mention` them.
 
 A turn-based rotation has no on-call schedule, so `/on-call` and `/schedule`
 return `400`. The rotation page and the home card show **Next up** instead: the
-engineer who gets the next claimed turn. Overrides that cover them are already
-applied when a turn is claimed.
+engineer who gets the next claimed turn. A turn-based rotation has no overrides
+or swaps, so this is always the next active member in order.
 
 ## In the app
 

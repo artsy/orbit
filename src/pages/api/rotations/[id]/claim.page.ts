@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next"
 
 import { prisma } from "lib/db"
-import { pickNextTurn, todayInTimezone } from "rotations/logic"
+import { pickNextTurn } from "rotations/logic"
 import { Action } from "system"
 import { recordEvent } from "utils/api/events"
 import {
@@ -10,11 +10,7 @@ import {
   requireUser,
   sendError,
 } from "utils/api/handler"
-import {
-  serializeEngineer,
-  serializeMember,
-  serializeOverride,
-} from "utils/api/serialize"
+import { serializeEngineer, serializeMember } from "utils/api/serialize"
 import { ClaimTurnBody, ClaimTurnResponse } from "rotations/types"
 
 const MAX_REFERENCE_LENGTH = 100
@@ -57,54 +53,39 @@ export default async function handler(
       return { status: 400, error: "Rotation is not turn-based" }
     }
 
-    const [members, overrides] = await Promise.all([
-      tx.rotationMember.findMany({
-        where: { rotationId },
-        orderBy: { position: "asc" },
-        include: { engineer: true },
-      }),
-      tx.override.findMany({
-        where: { rotationId, originalEngineerId: { not: null } },
-        include: { replacementEngineer: true },
-      }),
-    ])
+    const members = await tx.rotationMember.findMany({
+      where: { rotationId },
+      orderBy: { position: "asc" },
+      include: { engineer: true },
+    })
 
     const pick = pickNextTurn(
       members.map(serializeMember),
-      rotation.nextPosition,
-      overrides.map(serializeOverride),
-      todayInTimezone(rotation.timezone, new Date())
+      rotation.nextPosition
     )
     if (!pick) return { status: 409, error: "Rotation has no active members" }
 
-    const effective =
-      overrides.find(
-        (o) => o.replacementEngineer?.id === pick.effectiveEngineerId
-      )?.replacementEngineer ??
-      members.find((m) => m.engineerId === pick.effectiveEngineerId)?.engineer
-    if (!effective) return { status: 409, error: "Engineer not found" }
+    const engineer = members.find(
+      (m) => m.engineerId === pick.engineerId
+    )?.engineer
+    if (!engineer) return { status: 409, error: "Engineer not found" }
 
     await tx.rotation.update({
       where: { id: rotation.id },
       data: { nextPosition: pick.nextPosition },
     })
 
-    const covered =
-      pick.effectiveEngineerId !== pick.baseEngineerId
-        ? members.find((m) => m.engineerId === pick.baseEngineerId)?.engineer
-        : undefined
-
     await recordEvent(tx, {
       action: "rotation.turn_claimed",
       actorEmail: user.email as string,
-      summary: `Assigned turn to ${effective.name}${
-        covered ? ` (covering ${covered.name})` : ""
-      } on "${rotation.name}"${reference ? ` (${reference})` : ""}`,
+      summary: `Assigned turn to ${engineer.name} on "${rotation.name}"${
+        reference ? ` (${reference})` : ""
+      }`,
       rotationId: rotation.id,
       rotationName: rotation.name,
     })
 
-    return { engineer: serializeEngineer(effective) }
+    return { engineer: serializeEngineer(engineer) }
   })
 
   if ("error" in result) return sendError(res, result.status, result.error)

@@ -50,9 +50,7 @@ schedule and do the date math. `OnCallResponse` is
 
 `POST /api/rotations/[id]/claim` hands the next turn of a `turn` rotation to the
 next active member in order and advances `nextPosition`. It needs the `claim`
-action (`Action.claim`), which both `team` and `service` hold. If an override
-for that member covers today (in the rotation's timezone), the replacement is
-returned instead. `ClaimTurnBody` is `{ reference?: string }`, a free-text label
+action (`Action.claim`), which both `team` and `service` hold. `ClaimTurnBody` is `{ reference?: string }`, a free-text label
 such as a ticket id that goes into the Event Log summary (capped at 100
 characters). `ClaimTurnResponse` is
 `{ engineer: Engineer }`. Returns `400` for a `scheduled` rotation and `409`
@@ -64,20 +62,15 @@ concurrent claims never pick the same engineer.
 rotations. A `turn` rotation created without one stores `anchorDate` as the
 creation time. `kind` cannot change after creation, so `PATCH` ignores it.
 
-A `turn` rotation has no schedule. These endpoints return `400` for one:
+A `turn` rotation has no schedule, overrides, or swaps. These endpoints return
+`400` for one:
 
 | Route | Error |
 |---|---|
 | `GET /api/rotations/[id]/on-call` | `turn-based rotation has no schedule` |
 | `GET /api/rotations/[id]/schedule` | `turn-based rotation has no schedule` |
 | `POST /api/rotations/[id]/swaps` | `turn-based rotation has no swaps` |
-
-`POST /api/rotations/[id]/overrides` on a `turn` rotation requires
-`originalEngineerId` and returns `400` with
-`originalEngineerId is required for turn-based rotations` without it. It also
-returns `400` when `originalEngineerId` is not a member of the rotation
-(`originalEngineerId must be a member of this rotation`) or equals
-`replacementEngineerId` (`replacement must differ from the engineer being covered`).
+| `POST /api/rotations/[id]/overrides` | `turn-based rotation has no overrides` |
 
 A `Rotation` includes an optional `description` (string, nullable) — free-text
 notes on the rotation's purpose. Both `CreateRotationBody` and

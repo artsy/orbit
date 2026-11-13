@@ -2,20 +2,11 @@
  * Pure turn-rotation logic: each submission goes to the next engineer in
  * order. No Prisma, no I/O, no clock reads, so server and browser can share it.
  */
-import { TZDate } from "@date-fns/tz"
-import { format } from "date-fns"
-
-import { Override, RotationMember } from "rotations/types"
+import { RotationMember } from "rotations/types"
 
 export interface TurnPick {
-  baseEngineerId: string
-  effectiveEngineerId: string
+  engineerId: string
   nextPosition: number
-}
-
-/** `yyyy-MM-dd` for `now` in the given IANA timezone. */
-export function todayInTimezone(timezone: string, now: Date): string {
-  return format(new TZDate(now.getTime(), timezone), "yyyy-MM-dd")
 }
 
 function activeByPosition(members: RotationMember[]): RotationMember[] {
@@ -32,35 +23,13 @@ export function pickBaseMember(
   return active.find((m) => m.position >= nextPosition) ?? active[0] ?? null
 }
 
-// Overrides are stored as UTC midnight of the chosen day, so comparing the
-// date prefix as strings gives the same answer in every process timezone.
-function coversDay(override: Override, today: string): boolean {
-  return (
-    override.startDate.slice(0, 10) <= today &&
-    today <= override.endDate.slice(0, 10)
-  )
-}
-
 export function pickNextTurn(
   members: RotationMember[],
-  nextPosition: number,
-  overrides: Override[],
-  today: string
+  nextPosition: number
 ): TurnPick | null {
-  const base = pickBaseMember(members, nextPosition)
-  if (!base) return null
-
-  const replacement = overrides
-    .filter(
-      (o) => o.originalEngineerId === base.engineerId && coversDay(o, today)
-    )
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
-
-  return {
-    baseEngineerId: base.engineerId,
-    effectiveEngineerId: replacement?.replacementEngineerId ?? base.engineerId,
-    nextPosition: base.position + 1,
-  }
+  const picked = pickBaseMember(members, nextPosition)
+  if (!picked) return null
+  return { engineerId: picked.engineerId, nextPosition: picked.position + 1 }
 }
 
 /**

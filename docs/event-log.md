@@ -25,7 +25,7 @@ Every write action across the app records one entry:
 | `rotation.created` | Creating a rotation |
 | `rotation.updated` | Editing a rotation's name, cadence, anchor, timezone, or description |
 | `rotation.deleted` | Deleting a rotation |
-| `rotation.turn_claimed` | Assigning the next turn of a turn-based rotation (`POST /api/rotations/[id]/claim`) |
+| `rotation.turn_claimed` | Assigning the next turn of a turn-based rotation (`POST /api/rotations/[id]/claim`). The summary reads `Assigned turn to <name> on "<rotation>" (<reference>)`; the reference is omitted when none was sent |
 | `membership.updated` | Changing a rotation's ordered on-call membership |
 | `engineer.created` | Adding an engineer |
 | `engineer.updated` | Editing an engineer |

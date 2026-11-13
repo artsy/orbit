@@ -45,6 +45,9 @@ export default async function handler(
         where: { id: rotationId },
       })
       if (!rotation) return sendError(res, 404, "Rotation not found")
+      if (rotation.kind === "turn") {
+        return sendError(res, 400, "turn-based rotation has no overrides")
+      }
 
       const body = req.body as Partial<CreateOverrideBody>
       if (!body?.startDate || !body?.endDate || !body?.replacementEngineerId) {
@@ -53,35 +56,6 @@ export default async function handler(
           400,
           "startDate, endDate, and replacementEngineerId are required"
         )
-      }
-
-      if (rotation.kind === "turn" && !body.originalEngineerId) {
-        return sendError(
-          res,
-          400,
-          "originalEngineerId is required for turn-based rotations"
-        )
-      }
-
-      if (rotation.kind === "turn" && body.originalEngineerId) {
-        if (body.originalEngineerId === body.replacementEngineerId) {
-          return sendError(
-            res,
-            400,
-            "replacement must differ from the engineer being covered"
-          )
-        }
-        const members = await prisma.rotationMember.findMany({
-          where: { rotationId },
-          select: { engineerId: true },
-        })
-        if (!members.some((m) => m.engineerId === body.originalEngineerId)) {
-          return sendError(
-            res,
-            400,
-            "originalEngineerId must be a member of this rotation"
-          )
-        }
       }
 
       const startDate = new Date(body.startDate)

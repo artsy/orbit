@@ -6,12 +6,7 @@ import { FC, useMemo } from "react"
 import { Rotation } from "rotations/types"
 import { engineerColor } from "rotations/colors"
 import { findNextUp } from "components/rotations/TurnOrder"
-import {
-  useEngineers,
-  useMembers,
-  useOverrides,
-  useSchedule,
-} from "utils/hooks/useApi"
+import { useEngineers, useMembers, useSchedule } from "utils/hooks/useApi"
 
 interface CurrentOnCallProps {
   rotation: Rotation
@@ -42,15 +37,14 @@ export const CurrentOnCall: FC<CurrentOnCallProps> = ({ rotation }) => {
     end
   )
   const { data: members } = useMembers(isTurn ? rotation.id : undefined)
-  const { data: overrides } = useOverrides(isTurn ? rotation.id : undefined)
   const { data: engineers } = useEngineers()
   const session = useSession()
   const myEmail = session.data?.user?.email
 
   if (isTurn) {
-    if (!members || !overrides) return null
+    if (!members) return null
 
-    const nextUp = findNextUp(rotation, members, overrides, engineers ?? [])
+    const nextUp = findNextUp(rotation, members, engineers ?? [])
     if (!nextUp) {
       return (
         <Text variant="xs" color="mono60">
