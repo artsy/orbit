@@ -172,6 +172,16 @@ export interface SetMembersBody {
   engineerIds: string[]
 }
 
+/** Hand the next turn of a "turn" rotation to the next engineer in order. */
+export interface ClaimTurnBody {
+  /** Free-text label for what is being assigned, such as a ticket id. */
+  reference?: string
+}
+
+export interface ClaimTurnResponse {
+  engineer: Engineer
+}
+
 export interface CreateTeamBody {
   name: string
 }
