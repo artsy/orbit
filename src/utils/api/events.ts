@@ -10,6 +10,7 @@ export type EventAction =
   | "rotation.created"
   | "rotation.updated"
   | "rotation.deleted"
+  | "rotation.turn_claimed"
   | "membership.updated"
   | "engineer.created"
   | "engineer.updated"

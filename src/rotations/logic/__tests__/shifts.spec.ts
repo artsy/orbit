@@ -16,6 +16,8 @@ function makeRotation(overrides: Partial<Rotation> = {}): Rotation {
     anchorDate: ANCHOR,
     timezone: "UTC",
     description: null,
+    kind: "scheduled",
+    nextPosition: 0,
     createdAt: "2026-01-01T00:00:00.000Z",
     ...overrides,
   }

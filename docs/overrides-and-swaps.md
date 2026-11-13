@@ -121,6 +121,15 @@ and the earlier one becomes editable again.
 (Tapping the bar of a normal, unchanged period still opens the "swap with me"
 suggestion instead.)
 
+## Turn-based rotations
+
+A `turn` rotation is strict rotation. It has no weekly periods, so it has no
+overrides and no swaps: `POST /api/rotations/<rotationId>/swaps` and
+`POST /api/rotations/<rotationId>/overrides` both return `400`, and the
+rotation page has no override controls. Each claim goes to the next active
+member in order. To skip someone, mark them inactive or take them out of the
+member list.
+
 ## Viewing the result
 
 The schedule table on `/rotations/<rotationId>` marks any changed period with an

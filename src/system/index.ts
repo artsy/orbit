@@ -13,13 +13,14 @@ export enum Role {
   team = "team",
   product_development = "product_development",
   // Non-human principal authenticated by a service token (see utils/auth).
-  // Read-only: granted `read` below, never `manage`.
+  // Read-only, except it may `claim` a turn; never `manage`.
   service = "service",
 }
 
 export enum Action {
   read = "read",
   manage = "manage",
+  claim = "claim",
 }
 
 // For each _domain_, a map of _actions_ to the authorized _roles_.
@@ -33,6 +34,9 @@ const PERMISSIONS: Record<string, Partial<Record<Action, Role[]>>> = {
   rotations: {
     [Action.read]: [Role.team, Role.service],
     [Action.manage]: [Role.team],
+    // Claiming a turn writes, but a machine caller (the bounty intake
+    // script) must be able to do it.
+    [Action.claim]: [Role.team, Role.service],
   },
   overrides: {
     [Action.read]: [Role.team, Role.service],

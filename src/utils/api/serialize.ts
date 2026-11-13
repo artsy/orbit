@@ -22,6 +22,7 @@ import {
   EventLogEntry,
   Override,
   Rotation,
+  RotationKind,
   RotationMember,
   Team,
   TeamMember,
@@ -46,6 +47,8 @@ export function serializeRotation(rotation: PrismaRotation): Rotation {
     anchorDate: rotation.anchorDate.toISOString(),
     timezone: rotation.timezone,
     description: rotation.description,
+    kind: rotation.kind as RotationKind,
+    nextPosition: rotation.nextPosition,
     createdAt: rotation.createdAt.toISOString(),
   }
 }

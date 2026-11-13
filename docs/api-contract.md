@@ -40,12 +40,37 @@ fields present in the body change.
 | PATCH | `/api/rotations/[id]` | `UpdateRotationBody` | `Rotation` |
 | DELETE | `/api/rotations/[id]` | — | `Rotation` |
 | GET | `/api/rotations/[id]/on-call` | — | `OnCallResponse` |
+| POST | `/api/rotations/[id]/claim` | `ClaimTurnBody` | `ClaimTurnResponse` |
 
 `GET /api/rotations/[id]/on-call` is a convenience view of **who's on call now
 and next** (overrides/swaps applied), so callers don't have to fetch the full
 schedule and do the date math. `OnCallResponse` is
 `{ current: OnCallSlot | null, next: OnCallSlot | null }`, where `OnCallSlot` is
 `{ engineer: Engineer | null, periodStart, periodEnd }` (ISO dates).
+
+`POST /api/rotations/[id]/claim` hands the next turn of a `turn` rotation to the
+next active member in order and advances `nextPosition`. It needs the `claim`
+action (`Action.claim`), which both `team` and `service` hold. `ClaimTurnBody`
+is `{ reference?: string }`, a free-text label such as a ticket id that goes
+into the Event Log summary (capped at 100 characters). `ClaimTurnResponse` is
+`{ engineer: Engineer }`. Returns `400` for a `scheduled` rotation and `409`
+when no member is active. The rotation row is locked for the duration, so
+concurrent claims never pick the same engineer.
+
+`POST /api/rotations` takes an optional `kind` of `scheduled` (the default) or
+`turn`; any other value returns `400`. `anchorDate` is required for `scheduled`
+rotations. A `turn` rotation created without one stores `anchorDate` as the
+creation time. `kind` cannot change after creation, so `PATCH` ignores it.
+
+A `turn` rotation has no schedule, overrides, or swaps. These endpoints return
+`400` for one:
+
+| Route | Error |
+|---|---|
+| `GET /api/rotations/[id]/on-call` | `turn-based rotation has no schedule` |
+| `GET /api/rotations/[id]/schedule` | `turn-based rotation has no schedule` |
+| `POST /api/rotations/[id]/swaps` | `turn-based rotation has no swaps` |
+| `POST /api/rotations/[id]/overrides` | `turn-based rotation has no overrides` |
 
 A `Rotation` includes an optional `description` (string, nullable) — free-text
 notes on the rotation's purpose. Both `CreateRotationBody` and
@@ -60,6 +85,9 @@ notes on the rotation's purpose. Both `CreateRotationBody` and
 |---|---|---|---|
 | GET | `/api/rotations/[id]/members` | — | `RotationMember[]` (ordered by `position`, `engineer` populated) |
 | PUT | `/api/rotations/[id]/members` | `SetMembersBody` | `RotationMember[]` (replaces full ordered membership) |
+
+On a `turn` rotation, `PUT` locks the rotation row and moves `nextPosition` so
+the engineer who was next up keeps the turn (or the nearest later member does).
 
 ## Schedule — domain `rotations`
 
@@ -161,6 +189,7 @@ authenticate:
    whose token matches one configured in the `ORBIT_SERVICE_TOKENS` env
    (comma-separated) is authenticated as a **read-only** `service` principal.
    It can call read endpoints (`GET` engineers/rotations/schedule/on-call) but
-   is rejected with `403` on any write (`POST`/`PATCH`/`PUT`/`DELETE`). This is
+   is rejected with `403` on any write (`POST`/`PATCH`/`PUT`/`DELETE`), with one
+   exception: `POST /api/rotations/[id]/claim` (`Action.claim`). This is
    what a headless client such as a Slack bot uses. Leave `ORBIT_SERVICE_TOKENS`
    empty to disable service-token auth entirely.

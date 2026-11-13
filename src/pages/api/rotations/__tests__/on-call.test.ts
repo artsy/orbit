@@ -118,4 +118,18 @@ describe("/api/rotations/[id]/on-call", () => {
     expect(data.next).not.toBeNull()
     expect(data.next.engineer.id).toBe("eng-a")
   })
+
+  it("returns 400 for a turn rotation", async () => {
+    mockGetSessionUser.mockResolvedValue(TEAM_USER)
+    mockRotationFindUnique.mockResolvedValue({ ...ROTATION, kind: "turn" })
+
+    const { req, res } = buildReq()
+    await handler(req, res)
+
+    expect(res._getStatusCode()).toBe(400)
+    expect((res._getJSONData() as any).error).toBe(
+      "turn-based rotation has no schedule"
+    )
+    expect(mockMemberFindMany).not.toHaveBeenCalled()
+  })
 })

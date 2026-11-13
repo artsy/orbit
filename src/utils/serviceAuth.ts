@@ -2,10 +2,11 @@ import type { NextApiRequest } from "next"
 import { Role, UserWithAccessToken } from "system"
 
 /**
- * Resolves a machine (service-token) principal for headless read access, e.g. a
+ * Resolves a machine (service-token) principal for headless access, e.g. a
  * Slack bot polling the schedule. A request carrying `Authorization: Bearer
  * <token>` whose token matches one configured in `ORBIT_SERVICE_TOKENS`
- * (comma-separated) is treated as a read-only `service` user. Returns
+ * (comma-separated) is treated as a `service` user: read-only, except it can
+ * claim a turn on a turn-based rotation. Returns
  * `undefined` when no tokens are configured or the header is absent/invalid, so
  * the normal session flow takes over.
  *

@@ -4,16 +4,23 @@ import { Form, Formik } from "formik"
 import { useRouter } from "next/router"
 import * as Yup from "yup"
 import { createRotation } from "utils/api/mutations"
+import { CreateRotationBody, RotationKind } from "rotations/types"
 import { ALLOWED_TIMEZONES, TIMEZONE_LABELS, DEFAULT_TIMEZONE } from "rotations/timezones"
 
 interface NewRotationValues {
   name: string
+  kind: RotationKind
   cadence: string // "7" (weekly) or "14" (biweekly)
   startDate: string // YYYY-MM-DD
   startHour: string // "0".."23"
   timezone: string // IANA zone, e.g. "America/New_York"
   description: string
 }
+
+const kindOptions = [
+  { value: "scheduled", text: "Weekly" },
+  { value: "turn", text: "Turn-based" },
+]
 
 const cadenceOptions = [
   { value: "7", text: "Weekly" },
@@ -34,10 +41,43 @@ const timezoneOptions = ALLOWED_TIMEZONES.map((tz) => ({
 const validationSchema = Yup.object().shape({
   name: Yup.string().required("A name is required"),
   cadence: Yup.string().required(),
-  startDate: Yup.string().required("A start date is required"),
-  startHour: Yup.string().required("A start hour is required"),
+  startDate: Yup.string().when("kind", {
+    is: "scheduled",
+    then: (schema) => schema.required("A start date is required"),
+  }),
+  startHour: Yup.string().when("kind", {
+    is: "scheduled",
+    then: (schema) => schema.required("A start hour is required"),
+  }),
   timezone: Yup.string().required("A timezone is required"),
 })
+
+// Weekly rotations combine the chosen date + hour into an anchor instant,
+// interpreted in the rotation's timezone (the weekly/biweekly handoff time).
+// Turn-based rotations have no periods, so they send neither.
+const buildBody = (values: NewRotationValues): CreateRotationBody => {
+  const base = {
+    name: values.name,
+    timezone: values.timezone,
+    description: values.description || null,
+  }
+
+  if (values.kind === "turn") return { ...base, kind: "turn" }
+
+  const [year, month, day] = values.startDate.split("-").map(Number)
+  const anchorDate = TZDate.tz(
+    values.timezone,
+    year,
+    month - 1,
+    day,
+    Number(values.startHour),
+    0,
+    0,
+    0
+  ).toISOString()
+
+  return { ...base, cadenceDays: Number(values.cadence), anchorDate }
+}
 
 export default function NewRotationPage() {
   const router = useRouter()
@@ -52,6 +92,7 @@ export default function NewRotationPage() {
       <Formik<NewRotationValues>
         initialValues={{
           name: "",
+          kind: "scheduled",
           cadence: "7",
           startDate: "",
           startHour: "10",
@@ -61,27 +102,7 @@ export default function NewRotationPage() {
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
           try {
-            // Combine the chosen date + hour into an anchor instant, interpreted
-            // in the rotation's timezone (the weekly/biweekly handoff time).
-            const [year, month, day] = values.startDate.split("-").map(Number)
-            const anchorDate = TZDate.tz(
-              values.timezone,
-              year,
-              month - 1,
-              day,
-              Number(values.startHour),
-              0,
-              0,
-              0
-            ).toISOString()
-
-            const rotation = await createRotation({
-              name: values.name,
-              cadenceDays: Number(values.cadence),
-              anchorDate,
-              timezone: values.timezone,
-              description: values.description || null,
-            })
+            const rotation = await createRotation(buildBody(values))
 
             sendToast({ variant: "success", message: `${rotation.name} created` })
             router.push(`/rotations/${rotation.id}`)
@@ -125,30 +146,42 @@ export default function NewRotationPage() {
             />
 
             <Select
-              name="cadence"
-              title="Cadence"
-              options={cadenceOptions}
-              selected={values.cadence}
-              onSelect={(value) => setFieldValue("cadence", value)}
+              name="kind"
+              title="Type"
+              options={kindOptions}
+              selected={values.kind}
+              onSelect={(value) => setFieldValue("kind", value)}
             />
 
-            <Input
-              name="startDate"
-              title="Start date"
-              type="date"
-              value={values.startDate}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.startDate && errors.startDate}
-            />
+            {values.kind === "scheduled" && (
+              <>
+                <Select
+                  name="cadence"
+                  title="Cadence"
+                  options={cadenceOptions}
+                  selected={values.cadence}
+                  onSelect={(value) => setFieldValue("cadence", value)}
+                />
 
-            <Select
-              name="startHour"
-              title="Start hour (handoff time)"
-              options={hourOptions}
-              selected={values.startHour}
-              onSelect={(value) => setFieldValue("startHour", value)}
-            />
+                <Input
+                  name="startDate"
+                  title="Start date"
+                  type="date"
+                  value={values.startDate}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.startDate && errors.startDate}
+                />
+
+                <Select
+                  name="startHour"
+                  title="Start hour (handoff time)"
+                  options={hourOptions}
+                  selected={values.startHour}
+                  onSelect={(value) => setFieldValue("startHour", value)}
+                />
+              </>
+            )}
 
             <Select
               name="timezone"

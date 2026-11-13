@@ -47,6 +47,22 @@ const validationSchema = Yup.object().shape({
   timezone: Yup.string().required("A timezone is required"),
 })
 
+const scheduleFields = (values: EditRotationValues) => {
+  const [year, month, day] = values.startDate.split("-").map(Number)
+  const anchorDate = TZDate.tz(
+    values.timezone,
+    year,
+    month - 1,
+    day,
+    Number(values.startHour),
+    0,
+    0,
+    0
+  ).toISOString()
+
+  return { cadenceDays: Number(values.cadence), anchorDate }
+}
+
 export interface EditRotationModalProps {
   rotation: Rotation
   isOpen: boolean
@@ -63,6 +79,8 @@ export const EditRotationModal: React.FC<EditRotationModalProps> = ({
   const { sendToast } = useToasts()
 
   if (!isOpen) return null
+
+  const isTurn = rotation.kind === "turn"
 
   // Decompose the stored anchor instant into a local date + hour in the
   // rotation's timezone (the inverse of what the submit handler recombines).
@@ -85,24 +103,11 @@ export const EditRotationModal: React.FC<EditRotationModalProps> = ({
         validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting }) => {
           try {
-            const [year, month, day] = values.startDate.split("-").map(Number)
-            const anchorDate = TZDate.tz(
-              values.timezone,
-              year,
-              month - 1,
-              day,
-              Number(values.startHour),
-              0,
-              0,
-              0
-            ).toISOString()
-
             await updateRotation(rotation.id, {
               name: values.name,
               description: values.description || null,
-              cadenceDays: Number(values.cadence),
-              anchorDate,
               timezone: values.timezone,
+              ...(isTurn ? {} : scheduleFields(values)),
             })
 
             sendToast({ variant: "success", message: "Rotation updated" })
@@ -146,31 +151,35 @@ export const EditRotationModal: React.FC<EditRotationModalProps> = ({
               onBlur={handleBlur}
             />
 
-            <Select
-              name="cadence"
-              title="Cadence"
-              options={cadenceOptions}
-              selected={values.cadence}
-              onSelect={(value) => setFieldValue("cadence", value)}
-            />
+            {!isTurn && (
+              <>
+                <Select
+                  name="cadence"
+                  title="Cadence"
+                  options={cadenceOptions}
+                  selected={values.cadence}
+                  onSelect={(value) => setFieldValue("cadence", value)}
+                />
 
-            <Input
-              name="startDate"
-              title="Start date"
-              type="date"
-              value={values.startDate}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={touched.startDate && errors.startDate}
-            />
+                <Input
+                  name="startDate"
+                  title="Start date"
+                  type="date"
+                  value={values.startDate}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.startDate && errors.startDate}
+                />
 
-            <Select
-              name="startHour"
-              title="Start hour (handoff time)"
-              options={hourOptions}
-              selected={values.startHour}
-              onSelect={(value) => setFieldValue("startHour", value)}
-            />
+                <Select
+                  name="startHour"
+                  title="Start hour (handoff time)"
+                  options={hourOptions}
+                  selected={values.startHour}
+                  onSelect={(value) => setFieldValue("startHour", value)}
+                />
+              </>
+            )}
 
             <Select
               name="timezone"
