@@ -53,6 +53,18 @@ Relay/Metaphysics layer.
   thing it describes being deleted. `Event` instead carries a denormalized
   `rotationId`/`rotationName` snapshot.
 
+### Turn-based rotations
+
+A `Rotation` has a `kind`, either `scheduled` (the weekly model above) or `turn`.
+A `turn` rotation has no periods or schedule. Its `nextPosition` points at the
+member whose turn comes next, and each claim (`POST /api/rotations/[id]/claim`)
+advances it. The pick logic lives in
+[`src/rotations/logic/turns.ts`](../src/rotations/logic/turns.ts), which has no
+DB or clock access, so the server and the browser's "Next up" marker share one
+implementation. The claim runs in a transaction that locks the `Rotation` row
+(`SELECT ... FOR UPDATE`), so concurrent claims take turns instead of picking the
+same engineer. Replacing the member list takes the same lock.
+
 ## Auth & permissions
 
 Sign-in is Artsy/Gravity OAuth via next-auth. Reads and writes both require the

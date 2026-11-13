@@ -55,6 +55,13 @@ It returns `{ current, next }`, each `{ engineer, periodStart, periodEnd }`
 to page right now, and `current.engineer.slackUserId` is what a Slack bot needs
 to `@mention` them.
 
+## Turn-based rotations
+
+A turn-based rotation has no on-call schedule, so `/on-call` and `/schedule`
+return `400`. The rotation page and the home card show **Next up** instead: the
+engineer who gets the next claimed turn. Overrides that cover them are already
+applied when a turn is claimed.
+
 ## In the app
 
 The `/rotations/[id]` page renders this data two ways: a **calendar** overview

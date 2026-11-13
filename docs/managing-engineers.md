@@ -139,3 +139,7 @@ curl -X PUT http://localhost:3000/api/rotations/<rotationId>/members \
 
 The order of `engineerIds` **is** the on-call order. Reordering the array
 reorders the rotation.
+
+On a turn-based rotation, editing the member list keeps whoever is next up: if
+that engineer is still in the list they stay next, and if you removed them the
+next engineer after them in the old order takes the turn.

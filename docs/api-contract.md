@@ -53,7 +53,8 @@ next active member in order and advances `nextPosition`. It needs the `claim`
 action (`Action.claim`), which both `team` and `service` hold. If an override
 for that member covers today (in the rotation's timezone), the replacement is
 returned instead. `ClaimTurnBody` is `{ reference?: string }`, a free-text label
-such as a ticket id that goes into the Event Log summary. `ClaimTurnResponse` is
+such as a ticket id that goes into the Event Log summary (capped at 100
+characters). `ClaimTurnResponse` is
 `{ engineer: Engineer }`. Returns `400` for a `scheduled` rotation and `409`
 when no member is active. The rotation row is locked for the duration, so
 concurrent claims never pick the same engineer.
@@ -73,7 +74,10 @@ A `turn` rotation has no schedule. These endpoints return `400` for one:
 
 `POST /api/rotations/[id]/overrides` on a `turn` rotation requires
 `originalEngineerId` and returns `400` with
-`originalEngineerId is required for turn-based rotations` without it.
+`originalEngineerId is required for turn-based rotations` without it. It also
+returns `400` when `originalEngineerId` is not a member of the rotation
+(`originalEngineerId must be a member of this rotation`) or equals
+`replacementEngineerId` (`replacement must differ from the engineer being covered`).
 
 A `Rotation` includes an optional `description` (string, nullable) — free-text
 notes on the rotation's purpose. Both `CreateRotationBody` and

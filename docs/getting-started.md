@@ -88,7 +88,7 @@ manual steps below.
 | `NEXTAUTH_URL` | Canonical URL of this app. |
 | `NEXTAUTH_SECRET` | next-auth session/JWT secret. |
 | `PUBLIC_GRAVITY_URL` | Gravity URL exposed to the client. |
-| `ORBIT_SERVICE_TOKENS` | Optional, comma-separated bearer tokens granting **read-only** API access to headless clients (e.g. a Slack bot) via `Authorization: Bearer <token>`, no session required. Empty disables it. |
+| `ORBIT_SERVICE_TOKENS` | Optional, comma-separated bearer tokens granting **read-only** API access (plus claiming a turn on a turn-based rotation) to headless clients (e.g. a Slack bot) via `Authorization: Bearer <token>`, no session required. Empty disables it. |
 
 ## Authenticating with a different provider
 
